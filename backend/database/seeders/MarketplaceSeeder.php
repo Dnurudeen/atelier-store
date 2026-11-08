@@ -1,0 +1,199 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Banner;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\Setting;
+use App\Models\Store;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+class MarketplaceSeeder extends Seeder
+{
+    public function run(): void
+    {
+        Setting::updateOrCreate(['key' => 'commission_rate'], ['value' => '10']);
+
+        User::updateOrCreate(
+            ['email' => 'admin@atelier.ng'],
+            ['name' => 'Platform Admin', 'password' => Hash::make('password'), 'role' => 'admin']
+        );
+
+        User::updateOrCreate(
+            ['email' => 'customer@atelier.ng'],
+            ['name' => 'Ada Customer', 'password' => Hash::make('password'), 'role' => 'customer', 'phone' => '08030000001']
+        );
+
+        $categories = [
+            ['Fine Art', 'fine-art'],
+            ['Fashion', 'fashion'],
+            ['Ceramics', 'ceramics'],
+            ['Sculpture', 'sculpture'],
+            ['Leatherwork', 'leatherwork'],
+            ['Home Decor', 'home-decor'],
+        ];
+
+        $categoryModels = [];
+        foreach ($categories as $i => [$name, $slug]) {
+            $categoryModels[$slug] = Category::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $name,
+                    'image' => "/media/categories/{$slug}.jpg",
+                    'description' => "$name by Nigerian artisans",
+                    'sort_order' => $i + 1,
+                ]
+            );
+        }
+
+        $vendors = [
+            ['Adebayo Studio', 'adebayo-studio', 'Lagos', 'Contemporary oil paintings exploring Nigerian urban life.', 'vendor1@atelier.ng'],
+            ['Clay & Ember', 'clay-and-ember', 'Abuja', 'Hand-thrown ceramics and sculptural vessels.', 'vendor2@atelier.ng'],
+            ['Okafor Leather', 'okafor-leather', 'Aba', 'Bespoke leather footwear and bags crafted in Aba.', 'vendor3@atelier.ng'],
+            ['Heritage Weave', 'heritage-weave', 'Ibadan', 'Handwoven textiles and ready-to-wear fashion.', 'vendor4@atelier.ng'],
+            ['Bronze Path', 'bronze-path', 'Benin City', 'Sculpture and metal reliefs rooted in Benin craft.', 'vendor5@atelier.ng'],
+            ['Cedar & Loom', 'cedar-and-loom', 'Enugu', 'Furniture and home decor with warm timber tones.', 'vendor6@atelier.ng'],
+            ['Indigo Atelier', 'indigo-atelier', 'Abeokuta', 'Adire fashion and textile art.', 'vendor7@atelier.ng'],
+            ['Earth Form Lab', 'earth-form-lab', 'Jos', 'Experimental ceramics and clay installations.', 'vendor8@atelier.ng'],
+        ];
+
+        $stores = [];
+        foreach ($vendors as $i => [$name, $slug, $location, $bio, $email]) {
+            $n = ($i % 8) + 1;
+            $user = User::updateOrCreate(
+                ['email' => $email],
+                ['name' => $name, 'password' => Hash::make('password'), 'role' => 'vendor']
+            );
+
+            $stores[] = Store::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'user_id' => $user->id,
+                    'name' => $name,
+                    'bio' => $bio,
+                    'location' => $location,
+                    'status' => 'approved',
+                    'shipping_fee' => 2000 + ($i * 250),
+                    'rating' => 4.5 + ($i % 5) * 0.1,
+                    'logo' => "/media/makers/avatar-{$n}.jpg",
+                    'banner' => "/media/makers/banner-{$n}.jpg",
+                    'bank_name' => '044',
+                    'account_number' => '012345678' . $i,
+                    'account_name' => $name,
+                    'paystack_subaccount_code' => 'ACCT_demo_' . $slug,
+                ]
+            );
+        }
+
+        $demoVendor = User::updateOrCreate(
+            ['email' => 'vendor@atelier.ng'],
+            ['name' => 'Demo Vendor', 'password' => Hash::make('password'), 'role' => 'vendor']
+        );
+        Store::updateOrCreate(
+            ['slug' => 'demo-vendor-studio'],
+            [
+                'user_id' => $demoVendor->id,
+                'name' => 'Demo Vendor Studio',
+                'bio' => 'Demo store for testing the vendor dashboard.',
+                'location' => 'Lagos',
+                'status' => 'approved',
+                'shipping_fee' => 2500,
+                'rating' => 4.8,
+                'logo' => '/media/makers/avatar-1.jpg',
+                'banner' => '/media/makers/banner-1.jpg',
+            ]
+        );
+
+        $products = [
+            ['Lagos Twilight Canvas', 185000, 'fine-art', 0, 1],
+            ['Market Morning Oil', 150000, 'fine-art', 0, 2],
+            ['Indigo Heritage Polo', 42000, 'fashion', 3, 3],
+            ['Adire Wrap Dress', 62000, 'fashion', 6, 4],
+            ['Carved Earth Vessel', 68000, 'ceramics', 1, 5],
+            ['Terracotta Table Set', 54000, 'ceramics', 7, 6],
+            ['Ancestral Figure Sculpture', 220000, 'sculpture', 4, 7],
+            ['Bronze Mask Relief', 198000, 'sculpture', 4, 8],
+            ['Hand-Lasted Oxford', 95000, 'leatherwork', 2, 9],
+            ['Saddle Leather Tote', 78000, 'leatherwork', 2, 10],
+            ['Woven Accent Throw', 38000, 'home-decor', 3, 11],
+            ['Cedar Side Table', 125000, 'home-decor', 5, 12],
+        ];
+
+        $expanded = $products;
+        $suffixes = ['Edition', 'Series', 'Studio Cut', 'Signature', 'Collection'];
+        for ($i = 0; $i < 48; $i++) {
+            $base = $products[$i % count($products)];
+            $expanded[] = [
+                $base[0] . ' ' . $suffixes[$i % count($suffixes)] . ' ' . ($i + 1),
+                (int) ($base[1] * (0.85 + (($i % 5) * 0.07))),
+                $base[2],
+                $i % count($stores),
+                (($base[4] + $i - 1) % 12) + 1,
+            ];
+        }
+
+        foreach ($expanded as $i => [$name, $price, $catSlug, $storeIndex, $imageN]) {
+            $slug = Str::slug($name) . '-' . $i;
+            $product = Product::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'store_id' => $stores[$storeIndex % count($stores)]->id,
+                    'category_id' => $categoryModels[$catSlug]->id,
+                    'name' => $name,
+                    'description' => 'Crafted with care by a verified Atelier Nigeria maker. Each piece is unique and ships with a certificate of authenticity.',
+                    'price' => $price,
+                    'compare_at_price' => $i % 4 === 0 ? (int) ($price * 1.15) : null,
+                    'stock' => 3 + ($i % 10),
+                    'status' => 'published',
+                    'is_featured' => $i < 12,
+                    'rating' => 4.4 + ($i % 6) * 0.1,
+                    'reviews_count' => 2 + ($i % 20),
+                ]
+            );
+
+            ProductImage::updateOrCreate(
+                ['product_id' => $product->id, 'is_primary' => true],
+                ['url' => '/media/products/product-' . $imageN . '.jpg', 'sort_order' => 0]
+            );
+        }
+
+        Banner::updateOrCreate(
+            ['title' => 'Empowering Creators & Handcrafted Excellence'],
+            [
+                'subtitle' => "Nigeria's leading marketplace for artisans, painters, and makers.",
+                'image' => '/media/hero/hero-1.jpg',
+                'cta_label' => 'Shop the collection',
+                'cta_url' => '/shop',
+                'is_active' => true,
+                'sort_order' => 1,
+            ]
+        );
+        Banner::updateOrCreate(
+            ['title' => 'Meet the Makers Behind Every Piece'],
+            [
+                'subtitle' => 'Discover original art, ceramics, leather, and furniture.',
+                'image' => '/media/hero/hero-2.jpg',
+                'cta_label' => 'Explore artisans',
+                'cta_url' => '/makers',
+                'is_active' => true,
+                'sort_order' => 2,
+            ]
+        );
+        Banner::updateOrCreate(
+            ['title' => 'Join as a Vendor Today'],
+            [
+                'subtitle' => 'Turn your craft into a thriving business on Atelier Nigeria.',
+                'image' => '/media/hero/hero-3.jpg',
+                'cta_label' => 'Become a vendor',
+                'cta_url' => '/become-a-vendor',
+                'is_active' => true,
+                'sort_order' => 3,
+            ]
+        );
+    }
+}

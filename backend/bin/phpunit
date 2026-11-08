@@ -1,0 +1,102 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$root = dirname(__DIR__);
+require $root . '/vendor/autoload.php';
+
+/*
+ * Junctioned OneDrive vendor installs often leave classmap packages on disk
+ * without Composer registration. Register fallbacks PHPUnit needs.
+ */
+if (! class_exists(\SebastianBergmann\CodeCoverage\Report\Html\Colors::class, false)) {
+    $coverageSrc = $root . '/vendor/phpunit/php-code-coverage/src';
+
+    if (is_dir($coverageSrc)) {
+        spl_autoload_register(static function (string $class) use ($coverageSrc): void {
+            $prefix = 'SebastianBergmann\\CodeCoverage\\';
+            if (! str_starts_with($class, $prefix)) {
+                return;
+            }
+
+            $candidates = [];
+
+            $targetPrefix = $prefix . 'Test\\Target\\';
+            if (str_starts_with($class, $targetPrefix)) {
+                $short = str_replace('\\', '/', substr($class, strlen($targetPrefix)));
+                $candidates[] = $coverageSrc . '/Target/' . $short . '.php';
+            }
+
+            $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
+            $candidates[] = $coverageSrc . '/' . $relative . '.php';
+
+            if (str_starts_with($relative, 'Test/')) {
+                $candidates[] = $coverageSrc . '/' . substr($relative, 5) . '.php';
+            }
+
+            foreach (array_unique($candidates) as $path) {
+                if (is_file($path)) {
+                    require $path;
+
+                    return;
+                }
+            }
+        });
+    }
+}
+
+if (! class_exists(\Mockery::class, false)) {
+    $mockeryRoots = [
+        $root . '/vendor/mockery/mockery/library',
+        $root . '/vendor/mockery/mockery-fresh/library',
+    ];
+
+    foreach ($mockeryRoots as $mockeryLib) {
+        if (! is_dir($mockeryLib)) {
+            continue;
+        }
+
+        $helpers = dirname($mockeryLib) . '/helpers.php';
+        if (is_file($helpers)) {
+            require_once $helpers;
+        } elseif (is_file($mockeryLib . '/helpers.php')) {
+            require_once $mockeryLib . '/helpers.php';
+        }
+
+        if (is_file($mockeryLib . '/Mockery.php')) {
+            require_once $mockeryLib . '/Mockery.php';
+        }
+
+        spl_autoload_register(static function (string $class) use ($mockeryLib): void {
+            if ($class === 'Mockery') {
+                $path = $mockeryLib . '/Mockery.php';
+                if (is_file($path)) {
+                    require $path;
+                }
+
+                return;
+            }
+
+            if (! str_starts_with($class, 'Mockery\\')) {
+                return;
+            }
+
+            $relative = str_replace('\\', '/', substr($class, strlen('Mockery\\')));
+            $path = $mockeryLib . '/Mockery/' . $relative . '.php';
+            if (is_file($path)) {
+                require $path;
+            }
+        });
+
+        break;
+    }
+}
+
+$phpunit = $root . '/vendor/phpunit/phpunit/phpunit';
+if (! is_file($phpunit)) {
+    fwrite(STDERR, "PHPUnit binary not found at {$phpunit}\n");
+    exit(1);
+}
+
+require $phpunit;

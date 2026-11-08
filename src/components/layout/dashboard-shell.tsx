@@ -1,0 +1,88 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ReactNode } from "react";
+import { BrandLogo } from "@/components/brand/logo";
+import { cn } from "@/lib/utils";
+import { LogOut } from "lucide-react";
+
+export type DashNavItem = {
+  href: string;
+  label: string;
+  icon: ReactNode;
+};
+
+export function DashboardShell({
+  title,
+  nav,
+  children,
+  homeHref = "/",
+}: {
+  title: string;
+  nav: DashNavItem[];
+  children: ReactNode;
+  homeHref?: string;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <div className="min-h-screen bg-surface-warm">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-64 shrink-0 flex-col bg-burgundy text-white md:flex">
+          <div className="border-b border-white/10 px-5 py-5">
+            <BrandLogo variant="footer" href={homeHref} className="h-9 md:h-10" />
+            <p className="mt-3 text-xs tracking-widest text-white/55 uppercase">{title}</p>
+          </div>
+          <nav className="flex-1 space-y-1 p-3">
+            {nav.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+                    active ? "bg-white/15 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="border-t border-white/10 p-3">
+            <Link
+              href="/"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <LogOut size={16} />
+              Back to store
+            </Link>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-20 border-b border-border bg-white/95 px-4 py-4 backdrop-blur md:px-8">
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="font-display text-2xl text-foreground">{title}</h1>
+              <div className="flex gap-2 overflow-x-auto md:hidden">
+                {nav.slice(0, 4).map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="whitespace-nowrap rounded-full border border-border px-3 py-1.5 text-xs"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </header>
+          <main className="flex-1 p-4 md:p-8">{children}</main>
+        </div>
+      </div>
+    </div>
+  );
+}

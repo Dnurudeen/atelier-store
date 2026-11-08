@@ -1,0 +1,69 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { ProductCard } from "@/components/products/product-card";
+import { ProductBuyPanel, ProductGallery } from "@/components/products/product-buy-panel";
+import { getProduct, getProducts } from "@/lib/catalog";
+import { demoProducts } from "@/lib/demo-data";
+
+type PageProps = { params: Promise<{ slug: string }> };
+
+export async function generateStaticParams() {
+  const { data } = await getProducts();
+  return data.map((p) => ({ slug: p.slug }));
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) return { title: "Product not found" };
+  return {
+    title: product.name,
+    description: product.description || `${product.name} on Atelier Nigeria`,
+  };
+}
+
+export default function ProductPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<div className="container-atelier py-20 text-muted">Loading product…</div>}>
+      <ProductDetail params={params} />
+    </Suspense>
+  );
+}
+
+async function ProductDetail({ params }: PageProps) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) notFound();
+
+  const relatedSource =
+    process.env.NEXT_PUBLIC_USE_DEMO === "true"
+      ? demoProducts.filter(
+          (p) => p.id !== product.id && p.category?.slug === product.category?.slug
+        )
+      : (await getProducts(`?category=${product.category?.slug || ""}&per_page=8`)).data.filter(
+          (p) => p.slug !== product.slug
+        );
+
+  const related = relatedSource.slice(0, 4);
+
+  return (
+    <div className="container-atelier py-10 md:py-14">
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <ProductGallery product={product} />
+        <ProductBuyPanel product={product} />
+      </div>
+
+      {related.length > 0 && (
+        <section className="mt-16 border-t border-border pt-14 md:mt-20">
+          <h2 className="font-display text-2xl md:text-3xl">You may also like</h2>
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {related.map((item, index) => (
+              <ProductCard key={item.id} product={item} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
