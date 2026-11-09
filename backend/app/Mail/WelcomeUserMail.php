@@ -25,10 +25,10 @@ class WelcomeUserMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: '<p>Hi '.e($this->user->name).',</p>'
-                .'<p>Welcome to Atelier Nigeria. Your account is ready.</p>'
-                .'<p>Browse handmade work from Nigerian makers, or open a storefront if you create.</p>'
-                .'<p>— Atelier Nigeria</p>',
+            html: 'emails.welcome',
+            with: [
+                'user' => $this->user,
+            ],
         );
     }
 }

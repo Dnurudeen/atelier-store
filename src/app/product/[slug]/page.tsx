@@ -49,16 +49,16 @@ async function ProductDetail({ params }: PageProps) {
   const related = relatedSource.slice(0, 4);
 
   return (
-    <div className="container-atelier py-10 md:py-14">
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+    <div className="container-atelier py-5 pb-28 md:py-14 md:pb-14">
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-16">
         <ProductGallery product={product} />
         <ProductBuyPanel product={product} />
       </div>
 
       {related.length > 0 && (
-        <section className="mt-16 border-t border-border pt-14 md:mt-20">
-          <h2 className="font-display text-2xl md:text-3xl">You may also like</h2>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-10 border-t border-border pt-8 md:mt-20 md:pt-14">
+          <h2 className="font-display text-xl md:text-3xl">You may also like</h2>
+          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4 lg:gap-5 md:mt-8">
             {related.map((item, index) => (
               <ProductCard key={item.id} product={item} index={index} />
             ))}

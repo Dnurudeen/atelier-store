@@ -19,7 +19,7 @@ export function ProductGallery({ product }: { product: Product }) {
 
   return (
     <div className="space-y-4">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-xl border border-border bg-surface md:rounded-2xl">
         <AppImage
           key={current.url}
           src={current.url}
@@ -70,9 +70,9 @@ export function ProductBuyPanel({ product }: { product: Product }) {
             {product.category.name}
           </Link>
         )}
-        <h1 className="mt-2 font-display text-3xl leading-tight md:text-4xl">{product.name}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          <p className="text-2xl font-semibold text-burgundy">{formatNaira(price)}</p>
+        <h1 className="mt-1.5 font-display text-2xl leading-tight md:mt-2 md:text-4xl">{product.name}</h1>
+        <div className="mt-2.5 flex flex-wrap items-center gap-3 md:mt-3 md:gap-4">
+          <p className="text-xl font-semibold text-burgundy md:text-2xl">{formatNaira(price)}</p>
           {product.compare_at_price && (
             <p className="text-sm text-muted line-through">{formatNaira(product.compare_at_price)}</p>
           )}
@@ -115,7 +115,7 @@ export function ProductBuyPanel({ product }: { product: Product }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="hidden flex-wrap items-center gap-4 md:flex">
         <div className="inline-flex items-center rounded-full border border-border bg-white">
           <button
             type="button"
@@ -144,6 +144,43 @@ export function ProductBuyPanel({ product }: { product: Product }) {
           <ShoppingBag size={18} />
           {inStock ? "Add to cart" : "Out of stock"}
         </Button>
+      </div>
+
+      {/* Mobile sticky purchase bar — sits above the app tab bar */}
+      <div
+        className="fixed inset-x-0 z-40 border-t border-border bg-white/95 px-4 py-3 backdrop-blur-md md:hidden"
+        style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex max-w-lg items-center gap-3">
+          <div className="inline-flex items-center rounded-full border border-border bg-white">
+            <button
+              type="button"
+              className="p-2"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              aria-label="Decrease quantity"
+            >
+              <Minus size={14} />
+            </button>
+            <span className="min-w-7 text-center text-sm font-medium">{quantity}</span>
+            <button
+              type="button"
+              className="p-2"
+              onClick={() => setQuantity((q) => q + 1)}
+              aria-label="Increase quantity"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          <Button
+            size="md"
+            className="h-11 flex-1"
+            disabled={!inStock}
+            onClick={() => addItem(product, quantity, variant)}
+          >
+            <ShoppingBag size={16} />
+            {inStock ? `Add · ${formatNaira(price)}` : "Out of stock"}
+          </Button>
+        </div>
       </div>
 
       {!inStock && (

@@ -20,23 +20,18 @@ class VendorStatusMail extends Mailable
         $label = $this->status === 'approved' ? 'approved' : $this->status;
 
         return new Envelope(
-            subject: 'Your Atelier store was '.$label,
+            subject: 'Your Atelier store was ' . $label,
         );
     }
 
     public function content(): Content
     {
-        $message = match ($this->status) {
-            'approved' => 'Congratulations! '.e($this->store->name).' is approved. You can list products from your vendor dashboard.',
-            'rejected' => 'We could not approve '.e($this->store->name).' at this time. Reply to this email if you have questions.',
-            'suspended' => e($this->store->name).' has been suspended. Contact support for details.',
-            default => e($this->store->name).' status is now '.e($this->status).'.',
-        };
-
         return new Content(
-            htmlString: '<p>Hi '.e($this->store->user?->name ?? 'maker').',</p>'
-                .'<p>'.$message.'</p>'
-                .'<p>— Atelier Nigeria</p>',
+            html: 'emails.vendor-status',
+            with: [
+                'store' => $this->store,
+                'status' => $this->status,
+            ],
         );
     }
 }

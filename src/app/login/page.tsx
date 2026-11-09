@@ -53,13 +53,13 @@ function LoginForm() {
   }
 
   return (
-    <PageFade className="container-atelier flex min-h-[70vh] items-center justify-center py-16">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-white p-8 shadow-sm">
-        <p className="text-xs font-medium tracking-[0.2em] text-crimson uppercase">Welcome back</p>
-        <h1 className="mt-2 font-display text-3xl">Sign in to Atelier</h1>
-        <p className="mt-2 text-sm text-muted">Access your orders, wishlist, or seller dashboard.</p>
+    <PageFade className="container-atelier flex min-h-[70vh] items-center justify-center py-10 md:py-16">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-sm md:rounded-3xl md:p-8">
+        <p className="text-[10px] font-medium tracking-[0.2em] text-crimson uppercase md:text-xs">Welcome back</p>
+        <h1 className="mt-1.5 font-display text-2xl md:mt-2 md:text-3xl">Sign in to Atelier</h1>
+        <p className="mt-1.5 text-[13px] text-muted md:mt-2 md:text-sm">Access your orders, wishlist, or seller dashboard.</p>
 
-        <div className="mt-8">
+        <div className="mt-6 md:mt-8">
           <GoogleSignInButton
             label="signin_with"
             onSuccess={goAfterAuth}

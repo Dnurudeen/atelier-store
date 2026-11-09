@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PasswordResetMail;
 use App\Mail\WelcomeUserMail;
 use App\Models\Store;
 use App\Models\User;
@@ -212,10 +213,7 @@ class AuthController extends Controller
             );
 
             try {
-                Mail::raw(
-                    "Reset your Atelier Nigeria password with this token:\n\n{$plain}\n\nUse it on the reset password page with your new password.",
-                    fn ($message) => $message->to($user->email)->subject('Reset your Atelier password')
-                );
+                Mail::to($user->email)->send(new PasswordResetMail($user, $plain));
             } catch (\Throwable) {
                 //
             }
@@ -260,8 +258,8 @@ class AuthController extends Controller
 
         Store::create([
             'user_id' => $user->id,
-            'name' => $user->name."'s Studio",
-            'slug' => Str::slug($user->name).'-'.Str::random(4),
+            'name' => $user->name . "'s Studio",
+            'slug' => Str::slug($user->name) . '-' . Str::random(4),
             'status' => 'pending',
             'shipping_fee' => 2500,
         ]);

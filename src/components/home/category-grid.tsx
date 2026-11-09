@@ -5,22 +5,51 @@ import { media } from "@/lib/media";
 
 export function CategoryGrid({ categories }: { categories: Category[] }) {
   return (
-    <section className="bg-white py-14 md:py-20">
+    <section className="bg-white py-8 md:py-20">
       <div className="container-atelier">
-        <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="mb-5 flex items-end justify-between gap-3 md:mb-10 md:flex-col md:items-stretch md:gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-crimson uppercase">Browse by craft</p>
-            <h2 className="mt-2 font-display text-3xl md:text-4xl">Shop categories</h2>
+            <p className="text-[10px] font-semibold tracking-[0.2em] text-crimson uppercase md:text-xs">
+              Browse by craft
+            </p>
+            <h2 className="mt-1 font-display text-2xl md:mt-2 md:text-4xl">Shop categories</h2>
           </div>
           <Link
             href="/shop"
-            className="text-sm font-medium text-burgundy underline-offset-4 hover:underline"
+            className="shrink-0 text-xs font-medium text-burgundy underline-offset-4 hover:underline md:text-sm"
           >
-            View all products
+            View all
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Mobile: horizontal app rail */}
+        <div className="mobile-rail -mx-4 flex px-4 md:hidden">
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              href={`/shop?category=${category.slug}`}
+              className="group relative w-[42vw] max-w-[168px] overflow-hidden rounded-2xl border border-border bg-surface"
+            >
+              <div className="relative aspect-[3/4] overflow-hidden">
+                <AppImage
+                  src={category.image || media.category(category.slug)}
+                  alt={category.name}
+                  fill
+                  sizes="168px"
+                  className="transition duration-700 group-active:scale-105"
+                  frameClassName="absolute inset-0"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+              </div>
+              <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+                <h3 className="font-display text-base leading-tight">{category.name}</h3>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Desktop grid */}
+        <div className="hidden gap-4 sm:grid-cols-2 md:grid lg:grid-cols-3">
           {categories.map((category) => (
             <Link
               key={category.id}

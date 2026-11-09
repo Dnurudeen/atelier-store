@@ -25,9 +25,27 @@ const items = [
 
 export function ValueProps() {
   return (
-    <section className="border-y border-border bg-white py-12 md:py-16">
+    <section className="border-y border-border bg-white py-6 md:py-16">
       <div className="container-atelier">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Mobile compact chips */}
+        <div className="mobile-rail -mx-4 flex px-4 md:hidden">
+          {items.map((item) => (
+            <div
+              key={item.title}
+              className="flex w-[72vw] max-w-[260px] items-start gap-3 rounded-2xl border border-border bg-surface/70 p-3.5"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-burgundy/8 text-burgundy">
+                <item.icon size={16} strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-display text-[0.95rem] leading-tight">{item.title}</h3>
+                <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted">{item.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden gap-8 sm:grid-cols-2 md:grid lg:grid-cols-4">
           {items.map((item) => (
             <div key={item.title} className="flex gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-burgundy/8 text-burgundy">

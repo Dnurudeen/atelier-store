@@ -26,7 +26,7 @@ export function BrandLogo({
     <span
       className={cn(
         "relative inline-block",
-        variant === "footer" ? "h-12 md:h-14" : "h-11 md:h-14",
+        variant === "footer" ? "h-9 md:h-14" : "h-8 md:h-12",
         className
       )}
     >
@@ -36,7 +36,7 @@ export function BrandLogo({
         width={480}
         height={170}
         priority={priority}
-        className="h-full w-auto max-w-[200px] object-contain object-left md:max-w-[240px]"
+        className="h-full w-auto max-w-[140px] object-contain object-left md:max-w-[220px]"
         style={{ width: "auto", height: "100%" }}
       />
     </span>

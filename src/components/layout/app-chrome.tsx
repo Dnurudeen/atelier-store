@@ -5,8 +5,9 @@ import { ReactNode } from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { CartDrawer } from "@/components/layout/cart-drawer";
+import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 
-const CHROMELESS_PREFIXES = ["/vendor", "/admin", "/account", "/login", "/register"];
+const CHROMELESS_PREFIXES = ["/vendor", "/admin", "/account", "/login", "/register", "/onboarding", "/forgot-password"];
 
 function isChromeless(pathname: string) {
   return CHROMELESS_PREFIXES.some(
@@ -19,7 +20,12 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const hideChrome = isChromeless(pathname);
 
   if (hideChrome) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <CartDrawer />
+      </>
+    );
   }
 
   return (
@@ -27,6 +33,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      <MobileTabBar />
       <CartDrawer />
     </>
   );

@@ -65,16 +65,16 @@ function RegisterForm() {
   }
 
   return (
-    <PageFade className="container-atelier flex min-h-[70vh] items-center justify-center py-16">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-white p-8 shadow-sm">
-        <p className="text-xs font-medium tracking-[0.2em] text-crimson uppercase">
+    <PageFade className="container-atelier flex min-h-[70vh] items-center justify-center py-10 md:py-16">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-sm md:rounded-3xl md:p-8">
+        <p className="text-[10px] font-medium tracking-[0.2em] text-crimson uppercase md:text-xs">
           {asVendor ? "Vendor application" : "Join Atelier"}
         </p>
-        <h1 className="mt-2 font-display text-3xl">
+        <h1 className="mt-1.5 font-display text-2xl md:mt-2 md:text-3xl">
           {asVendor ? "Start selling your craft" : "Create your account"}
         </h1>
 
-        <div className="mt-8">
+        <div className="mt-6 md:mt-8">
           <GoogleSignInButton
             role={asVendor ? "vendor" : "customer"}
             label="signup_with"

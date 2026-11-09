@@ -39,11 +39,12 @@ export function CartDrawer() {
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 320 }}
             className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col bg-white shadow-2xl"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3.5 md:px-5 md:py-4">
               <div className="flex items-center gap-2">
-                <ShoppingBag size={20} className="text-burgundy" />
-                <h2 className="font-display text-xl text-foreground">Your cart</h2>
+                <ShoppingBag size={18} className="text-burgundy" />
+                <h2 className="font-display text-lg text-foreground md:text-xl">Your cart</h2>
                 {items.length > 0 && (
                   <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-muted">
                     {items.reduce((n, i) => n + i.quantity, 0)} items

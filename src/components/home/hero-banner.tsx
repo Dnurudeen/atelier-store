@@ -39,8 +39,9 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
 
   return (
     <section className="relative overflow-hidden bg-[#3d060d]">
-      <div className="container-atelier relative py-6 md:py-8">
-        <div className="relative aspect-[16/10] min-h-[320px] overflow-hidden rounded-2xl md:aspect-[16/7] md:min-h-[440px] md:rounded-3xl">
+      {/* Mobile: edge-to-edge app hero. Desktop: inset composition. */}
+      <div className="relative md:container-atelier md:py-8">
+        <div className="relative aspect-[5/6] max-h-[72vh] min-h-[280px] overflow-hidden md:aspect-[16/7] md:min-h-[420px] md:max-h-none md:rounded-3xl">
           {activeBanners.map((banner, index) => (
             <div
               key={banner.id}
@@ -57,34 +58,35 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
                 sizes="100vw"
                 frameClassName="absolute inset-0"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10 md:bg-gradient-to-r md:from-black/55 md:via-black/20 md:to-transparent" />
             </div>
           ))}
 
-          <div className="absolute inset-0 z-10 flex items-end p-6 md:p-12">
+          <div className="absolute inset-0 z-10 flex items-end p-4 pb-8 md:p-12 md:pb-12">
             <motion.div
               key={current.id}
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
               className="max-w-2xl text-white"
             >
-              <p className="mb-2 text-xs font-medium tracking-[0.22em] text-white/65 uppercase">
+              <p className="mb-1.5 text-[10px] font-medium tracking-[0.2em] text-white/65 uppercase md:mb-2 md:text-xs md:tracking-[0.22em]">
                 Handcrafted in Nigeria
               </p>
-              <h1 className="font-display text-3xl leading-[1.15] text-balance md:text-5xl lg:text-[3.35rem]">
+              <h1 className="font-display text-[1.65rem] leading-[1.15] text-balance md:text-5xl lg:text-[3.35rem]">
                 {current.title}
               </h1>
               {current.subtitle && (
-                <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/82 md:text-base">
+                <p className="mt-2.5 max-w-lg text-[13px] leading-relaxed text-white/82 md:mt-4 md:text-base">
                   {current.subtitle}
                 </p>
               )}
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-5 flex flex-wrap gap-2.5 md:mt-8 md:gap-3">
                 {current.cta_url && current.cta_label && (
                   <Button
                     variant="white"
-                    size="lg"
+                    size="md"
+                    className="h-10 px-5 text-sm md:h-12 md:px-7 md:text-base"
                     onClick={() => {
                       window.location.href = current.cta_url!;
                     }}
@@ -94,7 +96,7 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
                 )}
                 <Link
                   href="/makers"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/35 px-7 text-sm font-medium text-white transition hover:border-white hover:bg-white/10"
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-white/35 px-5 text-sm font-medium text-white transition hover:border-white hover:bg-white/10 md:h-12 md:px-7"
                 >
                   Meet makers
                 </Link>
@@ -122,7 +124,6 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
           </div>
         </div>
 
-        {/* Embla driver (syncs selected index + autoplay) */}
         <div ref={emblaRef} className="sr-only" aria-hidden>
           <div className="flex">
             {activeBanners.map((banner) => (
@@ -133,7 +134,7 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
           </div>
         </div>
 
-        <div className="mt-4 flex justify-center gap-2 md:absolute md:bottom-6 md:left-1/2 md:mt-0 md:-translate-x-1/2">
+        <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 justify-center gap-1.5 md:bottom-6">
           {activeBanners.map((_, i) => (
             <button
               key={i}
@@ -141,8 +142,8 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
               aria-label={`Go to slide ${i + 1}`}
               onClick={() => emblaApi?.scrollTo(i)}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-500",
-                i === selected ? "w-8 bg-crimson" : "w-1.5 bg-white/45 hover:bg-white/75"
+                "h-1 rounded-full transition-all duration-500",
+                i === selected ? "w-6 bg-crimson md:w-8" : "w-1 bg-white/45 hover:bg-white/75 md:w-1.5 md:h-1.5"
               )}
             />
           ))}

@@ -50,14 +50,14 @@ export function Header() {
           : "border-transparent bg-white"
       )}
     >
-      <div className="container-atelier flex h-16 items-center justify-between gap-4 md:h-20">
-        <div className="flex items-center gap-3">
+      <div className="container-atelier flex h-14 items-center justify-between gap-2 md:h-16">
+        <div className="flex items-center gap-1.5 md:gap-3">
           <button
             className="rounded-full p-2 hover:bg-surface md:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
           >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
           <BrandLogo variant="header" priority />
         </div>
