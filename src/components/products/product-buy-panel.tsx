@@ -162,7 +162,14 @@ export function VendorCard({ store }: { store: NonNullable<Product["store"]> }) 
       <div className="mt-3 flex items-center gap-4">
         {store.logo && (
           <div className="relative h-14 w-14 overflow-hidden rounded-full border border-border bg-white">
-            <Image src={store.logo} alt={store.name} fill className="object-cover" sizes="56px" />
+            <AppImage
+              src={store.logo}
+              alt={store.name}
+              fill
+              className="object-cover"
+              sizes="56px"
+              frameClassName="absolute inset-0"
+            />
           </div>
         )}
         <div className="min-w-0 flex-1">
