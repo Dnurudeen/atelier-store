@@ -39,9 +39,9 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
 
   return (
     <section className="relative overflow-hidden bg-[#3d060d]">
-      {/* Mobile: edge-to-edge app hero. Desktop: inset composition. */}
-      <div className="relative md:container-atelier md:py-8">
-        <div className="relative aspect-[5/6] max-h-[72vh] min-h-[280px] overflow-hidden md:aspect-[16/7] md:min-h-[420px] md:max-h-none md:rounded-3xl">
+      {/* Desktop keeps the original inset carousel; mobile stays edge-to-edge. */}
+      <div className="container-atelier relative py-0 md:py-8">
+        <div className="relative -mx-4 aspect-[5/6] max-h-[72vh] min-h-[280px] overflow-hidden md:mx-0 md:aspect-[16/7] md:max-h-[480px] md:min-h-[440px] md:rounded-3xl">
           {activeBanners.map((banner, index) => (
             <div
               key={banner.id}
@@ -62,7 +62,7 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
             </div>
           ))}
 
-          <div className="absolute inset-0 z-10 flex items-end p-4 pb-8 md:p-12 md:pb-12">
+          <div className="absolute inset-0 z-10 flex items-end p-4 pb-8 md:p-12">
             <motion.div
               key={current.id}
               initial={{ opacity: 0, y: 12 }}
@@ -134,7 +134,7 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
           </div>
         </div>
 
-        <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 justify-center gap-1.5 md:bottom-6">
+        <div className="mt-3 flex justify-center gap-1.5 md:absolute md:bottom-6 md:left-1/2 md:mt-0 md:-translate-x-1/2 md:gap-2">
           {activeBanners.map((_, i) => (
             <button
               key={i}
@@ -142,8 +142,8 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
               aria-label={`Go to slide ${i + 1}`}
               onClick={() => emblaApi?.scrollTo(i)}
               className={cn(
-                "h-1 rounded-full transition-all duration-500",
-                i === selected ? "w-6 bg-crimson md:w-8" : "w-1 bg-white/45 hover:bg-white/75 md:w-1.5 md:h-1.5"
+                "h-1 rounded-full transition-all duration-500 md:h-1.5",
+                i === selected ? "w-6 bg-crimson md:w-8" : "w-1 bg-white/45 hover:bg-white/75 md:w-1.5"
               )}
             />
           ))}
