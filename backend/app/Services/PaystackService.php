@@ -22,7 +22,7 @@ class PaystackService
             return [
                 'status' => true,
                 'demo' => true,
-                'message' => 'Paystack not configured — demo mode',
+                'message' => 'Paystack not configured. Demo mode.',
                 'data' => [
                     'authorization_url' => ($payload['callback_url'] ?? '/checkout/success') . '?reference=' . $payload['reference'] . '&demo=1',
                     'access_code' => 'demo_access',
@@ -40,7 +40,7 @@ class PaystackService
             return [
                 'status' => false,
                 'demo' => true,
-                'message' => 'Paystack init failed — falling back to demo',
+                'message' => 'Paystack init failed. Falling back to demo.',
                 'data' => [
                     'authorization_url' => ($payload['callback_url'] ?? '/checkout/success') . '?reference=' . $payload['reference'] . '&demo=1',
                     'access_code' => 'demo_access',

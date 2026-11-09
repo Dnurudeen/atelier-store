@@ -41,8 +41,8 @@ export function Footer() {
         <div className="space-y-5">
           <BrandLogo variant="footer" href="/" />
           <p className="max-w-sm text-sm leading-relaxed text-white/75">
-            Nigeria&apos;s leading handcrafted marketplace — empowering painters,
-            designers, and artisans to sell with confidence.
+            Nigeria&apos;s leading handcrafted marketplace for painters,
+            designers, and artisans who want to sell with confidence.
           </p>
           <p className="text-xs tracking-widest text-white/50 uppercase">
             www.atelierstore.studio

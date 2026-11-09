@@ -20,7 +20,7 @@ export default function ContactPage() {
           <p className="text-xs font-semibold tracking-[0.2em] text-crimson uppercase">Get in touch</p>
           <h1 className="mt-2 font-display text-4xl">Contact us</h1>
           <p className="mt-4 text-muted leading-relaxed">
-            Questions about an order, a maker, or selling on Atelier? Send a note — our team responds within
+            Questions about an order, a maker, or selling on Atelier? Send a note. Our team responds within
             two business days.
           </p>
           <dl className="mt-8 space-y-4 text-sm">
@@ -30,7 +30,7 @@ export default function ContactPage() {
             </div>
             <div>
               <dt className="font-medium text-foreground">Studio hours</dt>
-              <dd className="text-muted">Monday – Friday, 9:00 – 18:00 WAT</dd>
+              <dd className="text-muted">Monday to Friday, 9:00 to 18:00 WAT</dd>
             </div>
             <div>
               <dt className="font-medium text-foreground">Address</dt>

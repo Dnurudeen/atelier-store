@@ -158,11 +158,11 @@ export default function CheckoutPage() {
               <div className="rounded-xl bg-surface-warm p-4 text-sm">
                 <p className="font-medium text-foreground">
                   {storeCount > 1
-                    ? `${storeCount} makers — items may arrive in separate parcels`
-                    : "Single maker — one parcel"}
+                    ? `${storeCount} makers. Items may arrive in separate parcels`
+                    : "Single maker. One parcel"}
                 </p>
                 <p className="mt-2 text-muted">
-                  Estimated delivery: 3–7 business days within Nigeria. Rural areas may take longer.
+                  Estimated delivery: 3 to 7 business days within Nigeria. Rural areas may take longer.
                 </p>
               </div>
               <div className="flex gap-3">

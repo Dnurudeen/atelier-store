@@ -26,7 +26,7 @@ const steps = [
 
 const benefits = [
   "Reach buyers who value authentic Nigerian craft",
-  "Multi-vendor cart with per-store shipping",
+  "Cart support for several makers, with shipping per store",
   "Dedicated support during onboarding",
   "Marketing on Atelier home and category pages",
 ];
@@ -41,8 +41,8 @@ export default function BecomeAVendorPage() {
             Turn your studio into a storefront on Atelier Nigeria
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80">
-            Whether you paint, throw pottery, or stitch leather in Aba — we built this marketplace for makers
-            who want a professional home online.
+            Whether you paint, throw pottery, or stitch leather in Aba, we built this marketplace for makers
+            who want a professional home online!
           </p>
           <Link
             href="/register?role=vendor"

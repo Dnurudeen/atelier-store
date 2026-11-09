@@ -19,7 +19,7 @@ export default async function MakersPage() {
         <p className="text-xs font-semibold tracking-[0.2em] text-crimson uppercase">Artisan community</p>
         <h1 className="mt-2 font-display text-4xl">Meet the makers</h1>
         <p className="mt-3 text-muted leading-relaxed">
-          Independent studios and workshops across Nigeria — each storefront reviewed by the Atelier
+          Independent studios and workshops across Nigeria. Each storefront is reviewed by the Atelier
           team before going live.
         </p>
       </div>

@@ -9,7 +9,7 @@ export default function AccountOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <p className="text-sm text-muted">Welcome back — here&apos;s a snapshot of your Atelier activity.</p>
+      <p className="text-sm text-muted">Welcome back! Here&apos;s a snapshot of your Atelier activity.</p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Orders" value={String(demoCustomerOrders.length)} hint="Last 90 days" />

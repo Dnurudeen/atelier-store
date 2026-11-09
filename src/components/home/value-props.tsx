@@ -9,17 +9,17 @@ const items = [
   {
     icon: BadgeCheck,
     title: "Authenticated makers",
-    body: "Vendors pass review before selling — so buyers know who crafted every piece.",
+    body: "Vendors pass review before selling, so buyers know who crafted every piece.",
   },
   {
     icon: Truck,
     title: "Coordinated shipping",
-    body: "Multi-vendor carts are split thoughtfully, with tracking for every sub-order.",
+    body: "Carts with items from several makers are split carefully, with tracking for each parcel.",
   },
   {
     icon: ShieldCheck,
     title: "Secure checkout",
-    body: "Protected payments and transparent policies designed for buyers and sellers alike.",
+    body: "Protected payments and clear policies for buyers and sellers alike.",
   },
 ];
 

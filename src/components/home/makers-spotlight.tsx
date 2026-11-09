@@ -15,7 +15,7 @@ export function MakersSpotlight({ stores }: { stores: Store[] }) {
           <p className="text-xs font-semibold tracking-[0.2em] text-crimson uppercase">Verified artisans</p>
           <h2 className="mt-2 font-display text-3xl md:text-4xl">Makers in the spotlight</h2>
           <p className="mt-3 text-muted leading-relaxed">
-            Every storefront on Atelier Nigeria belongs to a practicing artisan — from Lagos studios to
+            Every storefront on Atelier Nigeria belongs to a practicing artisan, from Lagos studios to
             Aba leather houses.
           </p>
         </div>

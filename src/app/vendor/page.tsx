@@ -6,7 +6,7 @@ import { demoVendorOrders, demoVendorStats, formatNaira } from "@/lib/demo-dashb
 export default function VendorOverviewPage() {
   return (
     <div className="space-y-8">
-      <p className="text-sm text-muted">Adebayo Studio — performance at a glance.</p>
+      <p className="text-sm text-muted">Adebayo Studio. Here&apos;s how your store is doing.</p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Sales (30d)" value={formatNaira(demoVendorStats.sales)} />
         <StatCard label="Orders" value={String(demoVendorStats.orders)} hint={`${demoVendorStats.pendingOrders} awaiting dispatch`} />

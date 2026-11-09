@@ -53,9 +53,9 @@ class MarketplaceSeeder extends Seeder
 
         $vendors = [
             ['Adebayo Studio', 'adebayo-studio', 'Lagos', 'Contemporary oil paintings exploring Nigerian urban life.', 'vendor1@atelier.ng'],
-            ['Clay & Ember', 'clay-and-ember', 'Abuja', 'Hand-thrown ceramics and sculptural vessels.', 'vendor2@atelier.ng'],
+            ['Clay & Ember', 'clay-and-ember', 'Abuja', 'Hand thrown ceramics and sculptural vessels.', 'vendor2@atelier.ng'],
             ['Okafor Leather', 'okafor-leather', 'Aba', 'Bespoke leather footwear and bags crafted in Aba.', 'vendor3@atelier.ng'],
-            ['Heritage Weave', 'heritage-weave', 'Ibadan', 'Handwoven textiles and ready-to-wear fashion.', 'vendor4@atelier.ng'],
+            ['Heritage Weave', 'heritage-weave', 'Ibadan', 'Handwoven textiles and ready to wear fashion.', 'vendor4@atelier.ng'],
             ['Bronze Path', 'bronze-path', 'Benin City', 'Sculpture and metal reliefs rooted in Benin craft.', 'vendor5@atelier.ng'],
             ['Cedar & Loom', 'cedar-and-loom', 'Enugu', 'Furniture and home decor with warm timber tones.', 'vendor6@atelier.ng'],
             ['Indigo Atelier', 'indigo-atelier', 'Abeokuta', 'Adire fashion and textile art.', 'vendor7@atelier.ng'],
@@ -118,7 +118,7 @@ class MarketplaceSeeder extends Seeder
             ['Terracotta Table Set', 54000, 'ceramics', 7, 6],
             ['Ancestral Figure Sculpture', 220000, 'sculpture', 4, 7],
             ['Bronze Mask Relief', 198000, 'sculpture', 4, 8],
-            ['Hand-Lasted Oxford', 95000, 'leatherwork', 2, 9],
+            ['Hand Lasted Oxford', 95000, 'leatherwork', 2, 9],
             ['Saddle Leather Tote', 78000, 'leatherwork', 2, 10],
             ['Woven Accent Throw', 38000, 'home-decor', 3, 11],
             ['Cedar Side Table', 125000, 'home-decor', 5, 12],
@@ -163,9 +163,9 @@ class MarketplaceSeeder extends Seeder
         }
 
         Banner::updateOrCreate(
-            ['title' => 'Empowering Creators & Handcrafted Excellence'],
+            ['title' => 'Creators and Handcrafted Excellence'],
             [
-                'subtitle' => "Nigeria's leading marketplace for artisans, painters, and makers.",
+                'subtitle' => "Nigeria's marketplace for artisans, painters, and makers.",
                 'image' => '/media/hero/hero-1.jpg',
                 'cta_label' => 'Shop the collection',
                 'cta_url' => '/shop',

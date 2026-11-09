@@ -29,7 +29,7 @@ export default function VendorOnboardingPage() {
       <div className="max-w-lg rounded-2xl border border-border bg-white p-8">
         <h2 className="font-display text-2xl">Application received</h2>
         <p className="mt-2 text-sm text-muted">
-          Our team will review your store profile within 2–3 business days. You&apos;ll get an email
+          Our team will review your store profile within 2 to 3 business days. You&apos;ll get an email
           once approved.
         </p>
       </div>

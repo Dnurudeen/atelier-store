@@ -7,7 +7,7 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <p className="text-sm text-muted">Platform health — Atelier Nigeria marketplace.</p>
+      <p className="text-sm text-muted">Platform health for the Atelier Nigeria marketplace.</p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="GMV (30d)" value={formatNaira(gmv)} />
         <StatCard label="Orders" value={String(orders)} />

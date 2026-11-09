@@ -18,11 +18,11 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: {
-    default: "Atelier Nigeria — Handcrafted Marketplace",
+    default: "Atelier Nigeria | Handcrafted Marketplace",
     template: "%s | Atelier Nigeria",
   },
   description:
-    "Nigeria's multivendor marketplace for fine art, fashion, ceramics, leather, and home decor — empowering artisans to sell with confidence.",
+    "Nigeria's multivendor marketplace for fine art, fashion, ceramics, leather, and home decor. Artisans sell with confidence here.",
   metadataBase: new URL("https://www.atelierstore.studio"),
   openGraph: {
     title: "Atelier Nigeria",

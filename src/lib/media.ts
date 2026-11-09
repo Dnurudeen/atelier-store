@@ -1,4 +1,4 @@
-/** Local media helpers — prefer these over remote CDNs for reliability. */
+/** Local media helpers. Prefer these over remote CDNs for reliability. */
 
 export const media = {
   fallback: "/media/fallback.jpg",
