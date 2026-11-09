@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
+import { AuthDivider, GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageFade } from "@/components/motion/page-fade";
+import { postAuthPath } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth";
 
 function LoginForm() {
@@ -13,22 +15,21 @@ function LoginForm() {
   const params = useSearchParams();
   const login = useAuthStore((s) => s.login);
   const loading = useAuthStore((s) => s.loading);
-  const [email, setEmail] = useState("customer@atelier.ng");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  function goAfterAuth() {
+    const user = useAuthStore.getState().user;
+    router.push(postAuthPath(user, { next: params.get("next") }));
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
     try {
       await login(email, password);
-      const user = useAuthStore.getState().user;
-      const roles = user?.roles || [];
-      const next = params.get("next");
-      if (next) router.push(next);
-      else if (roles.includes("admin")) router.push("/admin");
-      else if (roles.includes("vendor")) router.push("/vendor");
-      else router.push("/account");
+      goAfterAuth();
     } catch (err) {
       if (process.env.NEXT_PUBLIC_USE_DEMO === "true") {
         const role =
@@ -39,6 +40,7 @@ function LoginForm() {
             name: role === "admin" ? "Platform Admin" : role === "vendor" ? "Demo Vendor" : "Ada Customer",
             email,
             roles: [role],
+            needs_onboarding: false,
           },
           "demo-token"
         );
@@ -56,7 +58,17 @@ function LoginForm() {
         <h1 className="mt-2 font-display text-3xl">Sign in to Atelier</h1>
         <p className="mt-2 text-sm text-muted">Access your orders, wishlist, or seller dashboard.</p>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+        <div className="mt-8">
+          <GoogleSignInButton
+            label="signin_with"
+            onSuccess={goAfterAuth}
+            onError={(message) => setError(message)}
+          />
+        </div>
+
+        <AuthDivider />
+
+        <form onSubmit={onSubmit} className="space-y-4">
           <Input
             label="Email"
             type="email"

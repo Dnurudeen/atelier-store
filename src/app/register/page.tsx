@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
+import { AuthDivider, GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageFade } from "@/components/motion/page-fade";
+import { postAuthPath } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth";
 
 function RegisterForm() {
@@ -20,6 +22,11 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+
+  function goAfterAuth() {
+    const user = useAuthStore.getState().user;
+    router.push(postAuthPath(user, { asVendor }));
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -36,7 +43,7 @@ function RegisterForm() {
         password_confirmation: confirm,
         role: asVendor ? "vendor" : "customer",
       });
-      router.push(asVendor ? "/vendor/onboarding" : "/account");
+      goAfterAuth();
     } catch (err) {
       if (process.env.NEXT_PUBLIC_USE_DEMO === "true") {
         useAuthStore.getState().setSession(
@@ -45,6 +52,7 @@ function RegisterForm() {
             name,
             email,
             roles: [asVendor ? "vendor" : "customer"],
+            needs_onboarding: false,
           },
           "demo-token"
         );
@@ -64,7 +72,19 @@ function RegisterForm() {
         <h1 className="mt-2 font-display text-3xl">
           {asVendor ? "Start selling your craft" : "Create your account"}
         </h1>
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+
+        <div className="mt-8">
+          <GoogleSignInButton
+            role={asVendor ? "vendor" : "customer"}
+            label="signup_with"
+            onSuccess={goAfterAuth}
+            onError={(message) => setError(message)}
+          />
+        </div>
+
+        <AuthDivider />
+
+        <form onSubmit={onSubmit} className="space-y-4">
           <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
           <Input
             label="Email"

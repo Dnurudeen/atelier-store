@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Mail\WelcomeUserMail;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\CreatesMarketplaceData;
 use Tests\TestCase;
@@ -108,5 +110,93 @@ class AuthApiTest extends TestCase
         $this->withHeaders($this->authHeaders($user))
             ->getJson('/api/v1/auth/me')
             ->assertUnauthorized();
+    }
+
+    public function test_google_sign_in_creates_user_and_requires_onboarding(): void
+    {
+        Mail::fake();
+        config(['services.google.client_id' => 'atelier-google-client.apps.googleusercontent.com']);
+
+        Http::fake([
+            'oauth2.googleapis.com/tokeninfo*' => Http::response([
+                'aud' => 'atelier-google-client.apps.googleusercontent.com',
+                'sub' => 'google-sub-123',
+                'email' => 'google.user@atelier.test',
+                'email_verified' => 'true',
+                'name' => 'Google User',
+                'picture' => 'https://example.com/a.png',
+            ], 200),
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/google', [
+            'id_token' => 'fake-google-id-token',
+            'role' => 'customer',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.user.email', 'google.user@atelier.test')
+            ->assertJsonPath('data.user.needs_onboarding', true)
+            ->assertJsonPath('data.user.has_google', true)
+            ->assertJsonStructure(['data' => ['token', 'user', 'is_new']]);
+
+        $user = User::where('email', 'google.user@atelier.test')->first();
+        $this->assertNotNull($user);
+        $this->assertSame('google-sub-123', $user->google_id);
+        $this->assertNull($user->onboarding_completed_at);
+        Mail::assertSent(WelcomeUserMail::class);
+
+        $this->withHeaders($this->authHeaders($user->fresh()))
+            ->postJson('/api/v1/auth/complete-onboarding', [
+                'name' => 'Google User',
+                'phone' => '08031112222',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.needs_onboarding', false)
+            ->assertJsonPath('data.phone', '08031112222');
+
+        $this->assertNotNull($user->fresh()->onboarding_completed_at);
+    }
+
+    public function test_google_sign_in_links_existing_email_account(): void
+    {
+        config(['services.google.client_id' => 'atelier-google-client.apps.googleusercontent.com']);
+        $existing = $this->makeUser(['email' => 'linked@atelier.test', 'phone' => '08010000000']);
+
+        Http::fake([
+            'oauth2.googleapis.com/tokeninfo*' => Http::response([
+                'aud' => 'atelier-google-client.apps.googleusercontent.com',
+                'sub' => 'google-sub-linked',
+                'email' => 'linked@atelier.test',
+                'email_verified' => true,
+                'name' => 'Linked User',
+            ], 200),
+        ]);
+
+        $this->postJson('/api/v1/auth/google', [
+            'id_token' => 'fake-google-id-token',
+        ])->assertOk()
+            ->assertJsonPath('data.user.id', $existing->id)
+            ->assertJsonPath('data.user.needs_onboarding', false)
+            ->assertJsonPath('data.is_new', false);
+
+        $this->assertSame('google-sub-linked', $existing->fresh()->google_id);
+    }
+
+    public function test_google_sign_in_rejects_bad_audience(): void
+    {
+        config(['services.google.client_id' => 'expected-client-id']);
+
+        Http::fake([
+            'oauth2.googleapis.com/tokeninfo*' => Http::response([
+                'aud' => 'wrong-client',
+                'sub' => 'x',
+                'email' => 'x@atelier.test',
+                'email_verified' => 'true',
+            ], 200),
+        ]);
+
+        $this->postJson('/api/v1/auth/google', [
+            'id_token' => 'bad-token',
+        ])->assertStatus(422);
     }
 }

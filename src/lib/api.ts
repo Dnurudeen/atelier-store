@@ -156,6 +156,8 @@ export type User = {
   avatar?: string | null;
   roles?: string[];
   store?: Store | null;
+  has_google?: boolean;
+  needs_onboarding?: boolean;
 };
 
 export type Address = {

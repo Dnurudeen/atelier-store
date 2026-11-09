@@ -11,7 +11,17 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'role', 'api_token'])]
+#[Fillable([
+    'name',
+    'email',
+    'password',
+    'phone',
+    'avatar',
+    'role',
+    'api_token',
+    'google_id',
+    'onboarding_completed_at',
+])]
 #[Hidden(['password', 'remember_token', 'api_token'])]
 class User extends Authenticatable
 {
@@ -22,8 +32,14 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'onboarding_completed_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function needsOnboarding(): bool
+    {
+        return $this->onboarding_completed_at === null;
     }
 
     public function store(): HasOne

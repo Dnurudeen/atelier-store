@@ -17,10 +17,11 @@ trait CreatesMarketplaceData
     {
         return User::create(array_merge([
             'name' => 'Test User',
-            'email' => 'user_'.Str::random(8).'@atelier.test',
+            'email' => 'user_' . Str::random(8) . '@atelier.test',
             'password' => 'password',
             'role' => 'customer',
             'api_token' => hash('sha256', Str::random(40)),
+            'onboarding_completed_at' => now(),
         ], $overrides));
     }
 
@@ -28,14 +29,14 @@ trait CreatesMarketplaceData
     {
         $user = $this->makeUser(array_merge([
             'name' => 'Vendor User',
-            'email' => 'vendor_'.Str::random(8).'@atelier.test',
+            'email' => 'vendor_' . Str::random(8) . '@atelier.test',
             'role' => 'vendor',
         ], $userOverrides));
 
         $store = Store::create(array_merge([
             'user_id' => $user->id,
             'name' => 'Test Studio',
-            'slug' => 'test-studio-'.Str::lower(Str::random(5)),
+            'slug' => 'test-studio-' . Str::lower(Str::random(5)),
             'status' => 'approved',
             'shipping_fee' => 2500,
             'rating' => 4.8,
@@ -50,7 +51,7 @@ trait CreatesMarketplaceData
     {
         return $this->makeUser(array_merge([
             'name' => 'Admin User',
-            'email' => 'admin_'.Str::random(8).'@atelier.test',
+            'email' => 'admin_' . Str::random(8) . '@atelier.test',
             'role' => 'admin',
         ], $overrides));
     }
@@ -61,7 +62,7 @@ trait CreatesMarketplaceData
 
         return Category::create(array_merge([
             'name' => $name,
-            'slug' => $overrides['slug'] ?? Str::slug($name).'-'.Str::lower(Str::random(4)),
+            'slug' => $overrides['slug'] ?? Str::slug($name) . '-' . Str::lower(Str::random(4)),
             'image' => '/media/categories/fine-art.jpg',
             'description' => 'Test category',
             'sort_order' => 1,
@@ -80,7 +81,7 @@ trait CreatesMarketplaceData
             'store_id' => $store->id,
             'category_id' => $category->id,
             'name' => $name,
-            'slug' => $overrides['slug'] ?? Str::slug($name).'-'.Str::lower(Str::random(5)),
+            'slug' => $overrides['slug'] ?? Str::slug($name) . '-' . Str::lower(Str::random(5)),
             'description' => 'Handcrafted test product',
             'price' => 50000,
             'stock' => 10,
@@ -121,7 +122,7 @@ trait CreatesMarketplaceData
     protected function authHeaders(User $user): array
     {
         return [
-            'Authorization' => 'Bearer '.$user->api_token,
+            'Authorization' => 'Bearer ' . $user->api_token,
             'Accept' => 'application/json',
         ];
     }

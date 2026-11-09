@@ -20,6 +20,12 @@ type AuthState = {
     password_confirmation: string;
     role?: "customer" | "vendor";
   }) => Promise<void>;
+  loginWithGoogle: (idToken: string, role?: "customer" | "vendor") => Promise<void>;
+  completeOnboarding: (payload: {
+    name?: string;
+    phone: string;
+    role?: "customer" | "vendor";
+  }) => Promise<void>;
   fetchMe: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -62,6 +68,31 @@ export const useAuthStore = create<AuthState>()(
             token: null,
           });
           get().setSession(res.data.user, res.data.token);
+        } finally {
+          set({ loading: false });
+        }
+      },
+      loginWithGoogle: async (idToken, role = "customer") => {
+        set({ loading: true });
+        try {
+          const res = await api<{ data: { user: User; token: string } }>("/auth/google", {
+            method: "POST",
+            body: { id_token: idToken, role },
+            token: null,
+          });
+          get().setSession(res.data.user, res.data.token);
+        } finally {
+          set({ loading: false });
+        }
+      },
+      completeOnboarding: async (payload) => {
+        set({ loading: true });
+        try {
+          const res = await api<{ data: User }>("/auth/complete-onboarding", {
+            method: "POST",
+            body: payload,
+          });
+          set({ user: res.data });
         } finally {
           set({ loading: false });
         }
