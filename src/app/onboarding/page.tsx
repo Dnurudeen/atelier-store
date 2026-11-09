@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageFade } from "@/components/motion/page-fade";
+import { PageLoader } from "@/components/ui/page-loader";
 import { postAuthPath } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth";
 
@@ -55,9 +56,7 @@ function OnboardingForm() {
   }
 
   if (!hydrated || !user) {
-    return (
-      <div className="container-atelier py-20 text-center text-sm text-muted">Checking your session…</div>
-    );
+    return <PageLoader label="Checking your session" />;
   }
 
   return (
@@ -95,7 +94,7 @@ function OnboardingForm() {
 
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={<div className="container-atelier py-20 text-sm text-muted">Loading...</div>}>
+    <Suspense fallback={<PageLoader label="Preparing onboarding" />}>
       <OnboardingForm />
     </Suspense>
   );

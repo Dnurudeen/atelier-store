@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageFade } from "@/components/motion/page-fade";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useCartStore } from "@/store/cart";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/lib/api";
@@ -103,11 +104,7 @@ export default function CheckoutPage() {
   }
 
   if (!hydrated || !token) {
-    return (
-      <div className="container-atelier py-20 text-center text-sm text-muted">
-        Checking your session…
-      </div>
-    );
+    return <PageLoader label="Checking your session" />;
   }
 
   if (items.length === 0 && !paying) {

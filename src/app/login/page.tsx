@@ -7,6 +7,7 @@ import { AuthDivider, GoogleSignInButton } from "@/components/auth/google-sign-i
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageFade } from "@/components/motion/page-fade";
+import { PageLoader } from "@/components/ui/page-loader";
 import { postAuthPath } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth";
 
@@ -108,7 +109,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="container-atelier py-20 text-sm text-muted">Loading...</div>}>
+    <Suspense fallback={<PageLoader label="Preparing sign in" />}>
       <LoginForm />
     </Suspense>
   );

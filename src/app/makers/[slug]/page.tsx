@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { MapPin, Package, Star } from "lucide-react";
 import { ProductCard } from "@/components/products/product-card";
 import { AppImage } from "@/components/ui/app-image";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getStore, getStoreProducts, getStores } from "@/lib/catalog";
 import { media } from "@/lib/media";
 import { formatRating } from "@/lib/utils";
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default function MakerStorefrontPage({ params }: PageProps) {
   return (
-    <Suspense fallback={<div className="container-atelier py-20 text-muted">Loading maker…</div>}>
+    <Suspense fallback={<PageLoader label="Meeting the maker" />}>
       <MakerStorefront params={params} />
     </Suspense>
   );

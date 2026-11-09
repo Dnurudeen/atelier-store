@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PageFade } from "@/components/motion/page-fade";
+import { PageLoader } from "@/components/ui/page-loader";
 import { api, type Order } from "@/lib/api";
 import { formatNaira } from "@/lib/utils";
 import { CheckCircle2 } from "lucide-react";
@@ -39,11 +40,7 @@ function SuccessContent() {
   }, [hydrated, reference, token]);
 
   if (loading) {
-    return (
-      <div className="container-atelier py-20 text-center text-sm text-muted">
-        Confirming your payment…
-      </div>
-    );
+    return <PageLoader label="Confirming your payment" />;
   }
 
   return (
@@ -76,7 +73,7 @@ function SuccessContent() {
 
 export default function CheckoutSuccessPage() {
   return (
-    <Suspense fallback={<div className="container-atelier py-20 text-center text-sm text-muted">Loading...</div>}>
+    <Suspense fallback={<PageLoader label="Confirming your payment" />}>
       <SuccessContent />
     </Suspense>
   );

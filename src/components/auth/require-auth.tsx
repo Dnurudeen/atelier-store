@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useAuthStore } from "@/store/auth";
 
 export function RequireAuth({
@@ -36,22 +37,14 @@ export function RequireAuth({
   }, [hydrated, token, user, roles, router, pathname]);
 
   if (!hydrated || loading || !token || !user) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted">
-        Checking your session…
-      </div>
-    );
+    return <PageLoader compact label="Checking your session" />;
   }
 
   if (roles?.length) {
     const userRoles = user.roles || [];
     const ok = roles.some((role) => userRoles.includes(role));
     if (!ok) {
-      return (
-        <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted">
-          Redirecting…
-        </div>
-      );
+      return <PageLoader compact label="Taking you there" />;
     }
   }
 

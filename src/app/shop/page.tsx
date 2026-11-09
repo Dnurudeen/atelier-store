@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { ShopCatalog } from "@/components/shop/shop-catalog";
+import { PageLoader } from "@/components/ui/page-loader";
 import { filterDemoProducts, getCategories, getProducts } from "@/lib/catalog";
 
 const USE_DEMO = process.env.NEXT_PUBLIC_USE_DEMO === "true";
@@ -44,7 +45,7 @@ async function ShopPageContent({ searchParams }: { searchParams: SearchParams })
 
 export default function ShopPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <Suspense fallback={<div className="container-atelier py-20 text-muted">Loading shop…</div>}>
+    <Suspense fallback={<PageLoader label="Opening the shop" />}>
       <ShopPageContent searchParams={searchParams} />
     </Suspense>
   );

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ProductCard } from "@/components/products/product-card";
 import { ProductBuyPanel, ProductGallery } from "@/components/products/product-buy-panel";
+import { PageLoader } from "@/components/ui/page-loader";
 import { getProduct, getProducts } from "@/lib/catalog";
 import { demoProducts } from "@/lib/demo-data";
 
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default function ProductPage({ params }: PageProps) {
   return (
-    <Suspense fallback={<div className="container-atelier py-20 text-muted">Loading product…</div>}>
+    <Suspense fallback={<PageLoader label="Loading this piece" />}>
       <ProductDetail params={params} />
     </Suspense>
   );
