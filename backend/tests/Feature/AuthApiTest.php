@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Mail\WelcomeUserMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\CreatesMarketplaceData;
 use Tests\TestCase;
 
@@ -13,6 +15,8 @@ class AuthApiTest extends TestCase
 
     public function test_customer_can_register(): void
     {
+        Mail::fake();
+
         $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Ada Okonkwo',
             'email' => 'ada@atelier.test',
@@ -26,6 +30,7 @@ class AuthApiTest extends TestCase
             ->assertJsonStructure(['data' => ['user' => ['id', 'name', 'email', 'roles'], 'token']]);
 
         $this->assertDatabaseHas('users', ['email' => 'ada@atelier.test', 'role' => 'customer']);
+        Mail::assertSent(WelcomeUserMail::class);
     }
 
     public function test_vendor_register_creates_pending_store(): void

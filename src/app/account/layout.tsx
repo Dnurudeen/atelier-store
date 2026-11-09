@@ -1,5 +1,8 @@
+"use client";
+
 import { ReactNode } from "react";
 import { DashboardShell, type DashNavItem } from "@/components/layout/dashboard-shell";
+import { RequireAuth } from "@/components/auth/require-auth";
 import { Home, Package, Heart, MapPin, User } from "lucide-react";
 
 const nav: DashNavItem[] = [
@@ -12,8 +15,10 @@ const nav: DashNavItem[] = [
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   return (
-    <DashboardShell title="My Account" nav={nav}>
-      {children}
-    </DashboardShell>
+    <RequireAuth>
+      <DashboardShell title="My Account" nav={nav}>
+        {children}
+      </DashboardShell>
+    </RequireAuth>
   );
 }

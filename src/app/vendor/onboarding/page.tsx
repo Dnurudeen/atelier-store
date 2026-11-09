@@ -1,27 +1,43 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function VendorOnboardingPage() {
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    bio: "",
+    location: "",
+    shipping_fee: "2500",
+    bank_name: "",
+    account_number: "",
+    account_name: "",
+  });
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
+    setError("");
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendor/apply`, {
+      await api("/vendor/onboarding", {
         method: "POST",
+        body: {
+          ...form,
+          shipping_fee: Number(form.shipping_fee || 0),
+        },
       });
-    } catch {
-      // demo fallback
+      setSubmitted(true);
+    } catch (err) {
+      setError((err as { message?: string })?.message || "Unable to submit application");
+    } finally {
+      setSaving(false);
     }
-    await new Promise((r) => setTimeout(r, 600));
-    setLoading(false);
-    setSubmitted(true);
   }
 
   if (submitted) {
@@ -45,13 +61,45 @@ export default function VendorOnboardingPage() {
         </p>
       </div>
       <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-white p-6">
-        <Input name="storeName" label="Store name" required placeholder="Adebayo Studio" />
-        <Input name="owner" label="Owner full name" required />
-        <Input name="email" label="Business email" type="email" required />
-        <Input name="location" label="City / state" required placeholder="Lagos, Lagos" />
-        <Textarea name="bio" label="About your craft" rows={4} required placeholder="What you make and your story…" />
-        <Input name="instagram" label="Instagram or portfolio (optional)" />
-        <Button type="submit" loading={loading}>
+        <Input
+          label="Store name"
+          value={form.name}
+          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          required
+        />
+        <Textarea
+          label="Bio"
+          value={form.bio}
+          onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+        />
+        <Input
+          label="Location"
+          value={form.location}
+          onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+        />
+        <Input
+          label="Default shipping fee (NGN)"
+          type="number"
+          value={form.shipping_fee}
+          onChange={(e) => setForm((f) => ({ ...f, shipping_fee: e.target.value }))}
+        />
+        <Input
+          label="Bank name"
+          value={form.bank_name}
+          onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))}
+        />
+        <Input
+          label="Account number"
+          value={form.account_number}
+          onChange={(e) => setForm((f) => ({ ...f, account_number: e.target.value }))}
+        />
+        <Input
+          label="Account name"
+          value={form.account_name}
+          onChange={(e) => setForm((f) => ({ ...f, account_name: e.target.value }))}
+        />
+        {error && <p className="text-sm text-crimson">{error}</p>}
+        <Button type="submit" loading={saving}>
           Submit application
         </Button>
       </form>

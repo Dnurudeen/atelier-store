@@ -3,12 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageFade } from "@/components/motion/page-fade";
 import { useCartStore } from "@/store/cart";
+import { useAuthStore } from "@/store/auth";
+import { api } from "@/lib/api";
+import { estimateCartShipping, mapCartToCheckoutPayload } from "@/lib/checkout";
 import { formatNaira, cn } from "@/lib/utils";
-import { DEFAULT_SHIPPING_FEE } from "@/lib/demo-dashboard";
 import { Check, MapPin, Package, CreditCard } from "lucide-react";
 
 const STEPS = [
@@ -17,23 +20,49 @@ const STEPS = [
   { id: 3, label: "Payment", icon: CreditCard },
 ] as const;
 
+type CheckoutResponse = {
+  data: {
+    authorization_url?: string | null;
+    reference: string;
+    demo?: boolean;
+    order?: { order_number?: string; total?: number | string };
+  };
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
   const subtotal = useCartStore((s) => s.subtotal());
   const clear = useCartStore((s) => s.clear);
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const hydrated = useAuthStore((s) => s.hydrated);
 
   const [step, setStep] = useState(1);
   const [paying, setPaying] = useState(false);
+  const [error, setError] = useState("");
   const [address, setAddress] = useState({
-    name: "Ada Okafor",
-    phone: "+234 801 234 5678",
-    line1: "14 Admiralty Way, Lekki Phase 1",
+    full_name: "",
+    phone: "",
+    address_line: "",
     city: "Lagos",
     state: "Lagos",
+    country: "Nigeria",
   });
 
-  const shipping = items.length > 0 ? DEFAULT_SHIPPING_FEE : 0;
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!token || !user) {
+      router.replace(`/login?next=${encodeURIComponent("/checkout")}`);
+    } else {
+      setAddress((a) => ({
+        ...a,
+        full_name: a.full_name || user.name || "",
+      }));
+    }
+  }, [hydrated, token, user, router]);
+
+  const shipping = estimateCartShipping(items);
   const total = subtotal + shipping;
 
   const storeCount = useMemo(() => {
@@ -43,26 +72,42 @@ export default function CheckoutPage() {
 
   async function handlePay() {
     setPaying(true);
+    setError("");
     try {
-      if (process.env.NEXT_PUBLIC_USE_DEMO !== "true") {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/checkout`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items, address, total }),
-        });
-        if (!res.ok) throw new Error("Checkout failed");
+      const callbackUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/checkout/success`
+          : undefined;
+      const payload = mapCartToCheckoutPayload(items, address, callbackUrl);
+      const res = await api<CheckoutResponse>("/checkout", {
+        method: "POST",
+        body: payload,
+      });
+
+      const url = res.data.authorization_url;
+      if (!url) {
+        throw new Error("No payment URL returned");
       }
-    } catch {
-      // Demo fallback on API failure
+
+      clear();
+      window.location.href = url;
+    } catch (err) {
+      setError((err as { message?: string })?.message || "Checkout failed. Please try again.");
+      setPaying(false);
     }
-    await new Promise((r) => setTimeout(r, 900));
-    clear();
-    router.push("/checkout/success");
   }
 
   function onAddressSubmit(e: FormEvent) {
     e.preventDefault();
     setStep(2);
+  }
+
+  if (!hydrated || !token) {
+    return (
+      <div className="container-atelier py-20 text-center text-sm text-muted">
+        Checking your session…
+      </div>
+    );
   }
 
   if (items.length === 0 && !paying) {
@@ -78,15 +123,15 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container-atelier py-10 md:py-14">
+    <PageFade className="container-atelier py-10 md:py-14">
       <p className="text-xs font-medium tracking-[0.2em] text-crimson uppercase">Checkout</p>
       <h1 className="mt-2 font-display text-3xl md:text-4xl">Complete your order</h1>
 
       <ol className="mt-8 flex flex-wrap gap-3">
         {STEPS.map((s) => {
-          const Icon = s.icon;
-          const done = step > s.id;
           const active = step === s.id;
+          const done = step > s.id;
+          const Icon = s.icon;
           return (
             <li
               key={s.id}
@@ -97,7 +142,7 @@ export default function CheckoutPage() {
                 !active && !done && "border-border text-muted"
               )}
             >
-              {done ? <Check size={16} /> : <Icon size={16} />}
+              {done ? <Check size={14} /> : <Icon size={14} />}
               {s.label}
             </li>
           );
@@ -112,40 +157,38 @@ export default function CheckoutPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="Full name"
-                  value={address.name}
-                  onChange={(e) => setAddress({ ...address, name: e.target.value })}
+                  value={address.full_name}
+                  onChange={(e) => setAddress((a) => ({ ...a, full_name: e.target.value }))}
                   required
                 />
                 <Input
                   label="Phone"
                   value={address.phone}
-                  onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                  onChange={(e) => setAddress((a) => ({ ...a, phone: e.target.value }))}
                   required
                 />
               </div>
               <Input
-                label="Street address"
-                value={address.line1}
-                onChange={(e) => setAddress({ ...address, line1: e.target.value })}
+                label="Address"
+                value={address.address_line}
+                onChange={(e) => setAddress((a) => ({ ...a, address_line: e.target.value }))}
                 required
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="City"
                   value={address.city}
-                  onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                  onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}
                   required
                 />
                 <Input
                   label="State"
                   value={address.state}
-                  onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                  onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))}
                   required
                 />
               </div>
-              <Button type="submit" className="mt-2">
-                Continue to delivery
-              </Button>
+              <Button type="submit">Continue to delivery</Button>
             </form>
           )}
 
@@ -153,7 +196,7 @@ export default function CheckoutPage() {
             <div className="space-y-4 rounded-2xl border border-border bg-white p-6">
               <h2 className="font-display text-xl">Delivery summary</h2>
               <p className="text-sm text-muted">
-                Ships to {address.line1}, {address.city}, {address.state}
+                Ships to {address.address_line}, {address.city}, {address.state}
               </p>
               <div className="rounded-xl bg-surface-warm p-4 text-sm">
                 <p className="font-medium text-foreground">
@@ -164,6 +207,7 @@ export default function CheckoutPage() {
                 <p className="mt-2 text-muted">
                   Estimated delivery: 3 to 7 business days within Nigeria. Rural areas may take longer.
                 </p>
+                <p className="mt-2 font-medium text-burgundy">Shipping: {formatNaira(shipping)}</p>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" type="button" onClick={() => setStep(1)}>
@@ -180,18 +224,15 @@ export default function CheckoutPage() {
             <div className="space-y-4 rounded-2xl border border-border bg-white p-6">
               <h2 className="font-display text-xl">Payment</h2>
               <p className="text-sm text-muted">
-                Pay securely with card, bank transfer, or USSD. Demo mode simulates a successful charge.
+                You will complete payment securely with Paystack (card, bank transfer, or USSD). If Paystack
+                keys are not configured locally, demo checkout opens the success page instead.
               </p>
-              <Input label="Card number (demo)" placeholder="4242 4242 4242 4242" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Expiry" placeholder="12/28" />
-                <Input label="CVV" placeholder="123" />
-              </div>
+              {error && <p className="text-sm text-crimson">{error}</p>}
               <div className="flex gap-3 pt-2">
                 <Button variant="outline" type="button" onClick={() => setStep(2)}>
                   Back
                 </Button>
-                <Button type="button" loading={paying} onClick={handlePay}>
+                <Button type="button" loading={paying} onClick={() => void handlePay()}>
                   Pay {formatNaira(total)}
                 </Button>
               </div>
@@ -208,9 +249,7 @@ export default function CheckoutPage() {
               return (
                 <li key={item.key} className="flex gap-3">
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-surface">
-                    {img ? (
-                      <Image src={img} alt="" fill className="object-cover" sizes="64px" />
-                    ) : null}
+                    {img ? <Image src={img} alt="" fill className="object-cover" sizes="64px" /> : null}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{item.product.name}</p>
@@ -242,6 +281,6 @@ export default function CheckoutPage() {
           </Link>
         </aside>
       </div>
-    </div>
+    </PageFade>
   );
 }

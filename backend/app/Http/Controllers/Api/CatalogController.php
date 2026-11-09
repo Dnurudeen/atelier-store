@@ -36,7 +36,8 @@ class CatalogController extends Controller
     {
         $query = Product::query()
             ->with(['images', 'store', 'category', 'variants'])
-            ->where('status', 'published');
+            ->where('status', 'published')
+            ->whereHas('store', fn ($q) => $q->where('status', 'approved'));
 
         if ($request->boolean('featured')) {
             $query->where('is_featured', true);
@@ -90,6 +91,7 @@ class CatalogController extends Controller
             ->with(['images', 'store', 'category', 'variants', 'tags', 'reviews.user'])
             ->where('slug', $slug)
             ->where('status', 'published')
+            ->whereHas('store', fn ($q) => $q->where('status', 'approved'))
             ->firstOrFail();
 
         return response()->json(['data' => $product]);
@@ -138,6 +140,7 @@ class CatalogController extends Controller
         $products = Product::query()
             ->with(['images', 'store'])
             ->where('status', 'published')
+            ->whereHas('store', fn ($builder) => $builder->where('status', 'approved'))
             ->where('name', 'like', $q)
             ->limit(12)
             ->get();

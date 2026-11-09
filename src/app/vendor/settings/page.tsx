@@ -1,44 +1,88 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { api, type Store } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { demoStores } from "@/lib/demo-data";
-
-const store = demoStores[0];
 
 export default function VendorSettingsPage() {
-  const [saved, setSaved] = useState(false);
-  const [shippingFee, setShippingFee] = useState(String(store.shipping_fee ?? 2500));
+  const [form, setForm] = useState({
+    name: "",
+    bio: "",
+    location: "",
+    shipping_fee: "2500",
+    logo: "",
+    banner: "",
+  });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function onSubmit(e: FormEvent) {
+  useEffect(() => {
+    void api<{ data: { store: Store } }>("/vendor/overview")
+      .then((res) => {
+        const store = res.data.store;
+        setForm({
+          name: store.name || "",
+          bio: store.bio || "",
+          location: store.location || "",
+          shipping_fee: String(store.shipping_fee ?? 2500),
+          logo: store.logo || "",
+          banner: store.banner || "",
+        });
+      })
+      .catch((err) => setError(err?.message || "Unable to load settings"));
+  }, []);
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      await api("/vendor/settings", {
+        method: "PUT",
+        body: {
+          ...form,
+          shipping_fee: Number(form.shipping_fee || 0),
+        },
+      });
+      setMessage("Store settings saved.");
+    } catch (err) {
+      setError((err as { message?: string })?.message || "Unable to save settings");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
-        <h2 className="font-display text-2xl">Store settings</h2>
-        <p className="mt-1 text-sm text-muted">Public profile and shipping defaults.</p>
-      </div>
-      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-white p-6">
-        <Input label="Store name" defaultValue={store.name} />
-        <Input label="Location" defaultValue={store.location ?? ""} />
-        <Textarea label="Bio" rows={4} defaultValue={store.bio ?? ""} />
-        <Input
-          label="Flat shipping fee (₦)"
-          type="number"
-          min={0}
-          value={shippingFee}
-          onChange={(e) => setShippingFee(e.target.value)}
-        />
-        <Input label="Logo URL" placeholder="https://…" defaultValue={store.logo ?? ""} />
-        {saved ? <p className="text-sm text-emerald-700">Settings saved (demo).</p> : null}
-        <Button type="submit">Save settings</Button>
-      </form>
-    </div>
+    <form onSubmit={onSubmit} className="max-w-2xl space-y-4 rounded-2xl border border-border bg-white p-6">
+      <h2 className="font-display text-2xl">Store settings</h2>
+      <Input label="Store name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+      <Textarea label="Bio" value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
+      <Input
+        label="Location"
+        value={form.location}
+        onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+      />
+      <Input
+        label="Shipping fee"
+        type="number"
+        value={form.shipping_fee}
+        onChange={(e) => setForm((f) => ({ ...f, shipping_fee: e.target.value }))}
+      />
+      <Input label="Logo URL" value={form.logo} onChange={(e) => setForm((f) => ({ ...f, logo: e.target.value }))} />
+      <Input
+        label="Banner URL"
+        value={form.banner}
+        onChange={(e) => setForm((f) => ({ ...f, banner: e.target.value }))}
+      />
+      {message && <p className="text-sm text-emerald-700">{message}</p>}
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <Button type="submit" loading={saving}>
+        Save settings
+      </Button>
+    </form>
   );
 }

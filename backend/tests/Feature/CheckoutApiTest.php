@@ -77,6 +77,55 @@ class CheckoutApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_checkout_rejects_oversell(): void
+    {
+        config(['services.paystack.secret' => '']);
+        $buyer = $this->makeUser();
+        $product = $this->makeProduct(null, null, ['price' => 10000, 'stock' => 1]);
+
+        $this->withHeaders($this->authHeaders($buyer))->postJson('/api/v1/checkout', [
+            'items' => [['product_id' => $product->id, 'quantity' => 5]],
+            'shipping_address' => [
+                'full_name' => 'Ada',
+                'phone' => '0801',
+                'address_line' => 'Street',
+                'city' => 'Lagos',
+                'state' => 'Lagos',
+            ],
+        ])->assertStatus(422);
+
+        $this->assertSame(1, $product->fresh()->stock);
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_paid_order_decrements_stock_and_sends_mail(): void
+    {
+        config(['services.paystack.secret' => '']);
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $buyer = $this->makeUser();
+        $product = $this->makeProduct(null, null, ['price' => 15000, 'stock' => 4]);
+
+        $reference = $this->withHeaders($this->authHeaders($buyer))->postJson('/api/v1/checkout', [
+            'items' => [['product_id' => $product->id, 'quantity' => 2]],
+            'shipping_address' => [
+                'full_name' => 'Ada',
+                'phone' => '0801',
+                'address_line' => 'Street',
+                'city' => 'Lagos',
+                'state' => 'Lagos',
+            ],
+        ])->json('data.reference');
+
+        $this->postJson('/api/v1/webhooks/paystack', [
+            'event' => 'charge.success',
+            'data' => ['reference' => $reference],
+        ])->assertOk();
+
+        $this->assertSame(2, $product->fresh()->stock);
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\OrderPaidMail::class);
+    }
+
     public function test_webhook_and_verify_mark_order_paid(): void
     {
         config(['services.paystack.secret' => '']);

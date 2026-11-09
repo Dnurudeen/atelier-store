@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\VendorStatusMail;
 use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Order;
@@ -12,6 +13,7 @@ use App\Models\Setting;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class AdminController extends Controller
@@ -39,13 +41,22 @@ class AdminController extends Controller
 
     public function updateVendor(Request $request, int $id)
     {
-        $store = Store::findOrFail($id);
+        $store = Store::with('user')->findOrFail($id);
         $data = $request->validate([
             'status' => ['required', 'in:pending,approved,rejected,suspended'],
         ]);
         $store->update($data);
+        $store = $store->fresh('user');
 
-        return response()->json(['data' => $store->fresh('user')]);
+        if ($store->user?->email && in_array($data['status'], ['approved', 'rejected', 'suspended'], true)) {
+            try {
+                Mail::to($store->user->email)->send(new VendorStatusMail($store, $data['status']));
+            } catch (\Throwable) {
+                //
+            }
+        }
+
+        return response()->json(['data' => $store]);
     }
 
     public function products()

@@ -1,20 +1,53 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { demoCustomerOrders, formatNaira } from "@/lib/demo-dashboard";
+import { api, type Order } from "@/lib/api";
+import { formatNaira } from "@/lib/utils";
+import type { OrderStatus } from "@/lib/demo-dashboard";
+
+function mapStatus(status: string): OrderStatus {
+  if (status === "completed" || status === "delivered") return "delivered";
+  if (status === "shipped") return "shipped";
+  if (status === "cancelled") return "cancelled";
+  if (status === "processing" || status === "paid") return "processing";
+  return "pending";
+}
 
 export default function AccountOverviewPage() {
-  const recent = demoCustomerOrders[0];
-  const totalSpent = demoCustomerOrders.reduce((s, o) => s + o.total, 0);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [ordersRes, wishRes] = await Promise.all([
+          api<{ data: Order[] }>("/account/orders"),
+          api<{ data: unknown[] }>("/account/wishlist"),
+        ]);
+        setOrders(ordersRes.data || []);
+        setWishlistCount(wishRes.data?.length || 0);
+      } catch (err) {
+        setError((err as { message?: string })?.message || "Unable to load account");
+      }
+    })();
+  }, []);
+
+  const recent = orders[0];
+  const totalSpent = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
 
   return (
     <div className="space-y-8">
       <p className="text-sm text-muted">Welcome back! Here&apos;s a snapshot of your Atelier activity.</p>
+      {error && <p className="text-sm text-crimson">{error}</p>}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Orders" value={String(demoCustomerOrders.length)} hint="Last 90 days" />
+        <StatCard label="Orders" value={String(orders.length)} hint="All time" />
         <StatCard label="Total spent" value={formatNaira(totalSpent)} />
-        <StatCard label="Wishlist" value="5" hint="Saved pieces" />
+        <StatCard label="Wishlist" value={String(wishlistCount)} hint="Saved pieces" />
       </div>
 
       <section className="rounded-2xl border border-border bg-white p-6">
@@ -27,13 +60,14 @@ export default function AccountOverviewPage() {
         {recent ? (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-surface/50 p-4">
             <div>
-              <p className="font-medium">{recent.id}</p>
+              <p className="font-medium">{recent.order_number}</p>
               <p className="text-sm text-muted">
-                {recent.date} · {recent.store}
+                {new Date(recent.created_at).toLocaleDateString()} ·{" "}
+                {recent.sub_orders?.[0]?.store?.name || "Atelier"}
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <StatusBadge status={recent.status} />
+              <StatusBadge status={mapStatus(recent.status)} />
               <span className="font-semibold text-burgundy">{formatNaira(recent.total)}</span>
             </div>
           </div>
@@ -55,7 +89,7 @@ export default function AccountOverviewPage() {
           className="rounded-2xl border border-border bg-surface-warm/50 p-5 transition hover:border-burgundy/30"
         >
           <p className="text-xs tracking-widest text-muted uppercase">Profile</p>
-          <p className="mt-2 font-medium">Update your details &amp; password</p>
+          <p className="mt-2 font-medium">Update your details</p>
         </Link>
       </section>
     </div>

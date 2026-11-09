@@ -8,8 +8,10 @@ type AuthState = {
   user: User | null;
   token: string | null;
   loading: boolean;
+  hydrated: boolean;
   setSession: (user: User, token: string) => void;
   clear: () => void;
+  setHydrated: (value: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (payload: {
     name: string;
@@ -28,6 +30,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       loading: false,
+      hydrated: false,
+      setHydrated: (value) => set({ hydrated: value }),
       setSession: (user, token) => {
         setToken(token);
         set({ user, token });
@@ -64,7 +68,11 @@ export const useAuthStore = create<AuthState>()(
       },
       fetchMe: async () => {
         const token = get().token;
-        if (!token) return;
+        if (!token) {
+          setToken(null);
+          return;
+        }
+        setToken(token);
         try {
           const res = await api<{ data: User }>("/auth/me");
           set({ user: res.data });
@@ -84,6 +92,14 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "atelier-auth",
       partialize: (s) => ({ user: s.user, token: s.token }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) {
+          setToken(state.token);
+        } else {
+          setToken(null);
+        }
+        state?.setHydrated(true);
+      },
     }
   )
 );

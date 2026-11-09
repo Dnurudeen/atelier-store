@@ -15,12 +15,12 @@ class VendorApiTest extends TestCase
     use CreatesMarketplaceData;
     use RefreshDatabase;
 
-    public function test_overview_requires_vendor_store(): void
+    public function test_overview_requires_vendor_role_and_store(): void
     {
         $customer = $this->makeUser();
         $this->withHeaders($this->authHeaders($customer))
             ->getJson('/api/v1/vendor/overview')
-            ->assertNotFound();
+            ->assertForbidden();
 
         [$vendor] = $this->makeVendor();
         $this->withHeaders($this->authHeaders($vendor))
@@ -75,7 +75,7 @@ class VendorApiTest extends TestCase
         $productId = $create->json('data.id');
 
         $this->withHeaders($this->authHeaders($vendor))
-            ->putJson('/api/v1/vendor/products/'.$productId, [
+            ->putJson('/api/v1/vendor/products/' . $productId, [
                 'price' => 20000,
                 'status' => 'published',
             ])
@@ -96,7 +96,7 @@ class VendorApiTest extends TestCase
         $foreign = $this->makeProduct($storeB);
 
         $this->withHeaders($this->authHeaders($vendorA))
-            ->putJson('/api/v1/vendor/products/'.$foreign->id, ['price' => 1])
+            ->putJson('/api/v1/vendor/products/' . $foreign->id, ['price' => 1])
             ->assertNotFound();
     }
 
@@ -128,7 +128,7 @@ class VendorApiTest extends TestCase
         $subOrderId = SubOrder::first()->id;
 
         $this->withHeaders($this->authHeaders($vendor))
-            ->putJson('/api/v1/vendor/orders/'.$subOrderId, [
+            ->putJson('/api/v1/vendor/orders/' . $subOrderId, [
                 'status' => 'shipped',
                 'tracking_number' => 'DHL-123',
             ])

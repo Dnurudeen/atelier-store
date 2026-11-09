@@ -1,53 +1,65 @@
-import { demoPayouts, formatNaira } from "@/lib/demo-dashboard";
-import { cn } from "@/lib/utils";
+"use client";
 
-const payoutStyles: Record<string, string> = {
-  completed: "bg-emerald-50 text-emerald-900",
-  processing: "bg-sky-50 text-sky-900",
-  scheduled: "bg-amber-50 text-amber-900",
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { formatNaira } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+type Payout = {
+  id: number;
+  amount: number | string;
+  commission: number | string;
+  status: string;
+  store?: { name?: string };
 };
 
 export default function AdminPayoutsPage() {
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [error, setError] = useState("");
+
+  async function load() {
+    const res = await api<{ data: Payout[] }>("/admin/payouts");
+    setPayouts(res.data || []);
+  }
+
+  useEffect(() => {
+    void load().catch((err) => setError(err?.message || "Unable to load payouts"));
+  }, []);
+
+  async function markPaid(id: number) {
+    await api(`/admin/payouts/${id}`, {
+      method: "PUT",
+      body: { status: "paid", reference: `PAY-${id}` },
+    });
+    await load();
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-2xl">Vendor payouts</h2>
-        <p className="mt-1 text-sm text-muted">Scheduled and completed disbursements.</p>
-      </div>
-      <div className="overflow-x-auto rounded-2xl border border-border bg-white">
-        <table className="w-full min-w-[560px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-border text-xs tracking-widest text-muted uppercase">
-              <th className="px-4 py-3 font-medium">ID</th>
-              <th className="px-4 py-3 font-medium">Vendor</th>
-              <th className="px-4 py-3 font-medium">Date</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {demoPayouts.map((row) => (
-              <tr key={row.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 font-medium">{row.id}</td>
-                <td className="px-4 py-3 text-muted">{row.vendor}</td>
-                <td className="px-4 py-3 text-muted">{row.date}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
-                      payoutStyles[row.status] ?? "bg-stone-100"
-                    )}
-                  >
-                    {row.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right font-semibold text-burgundy">
-                  {formatNaira(row.amount)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <h2 className="font-display text-2xl">Payouts</h2>
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <div className="space-y-3">
+        {payouts.map((payout) => (
+          <div
+            key={payout.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-white p-4"
+          >
+            <div>
+              <p className="font-medium">{payout.store?.name || `Payout #${payout.id}`}</p>
+              <p className="text-sm text-muted capitalize">
+                {payout.status} · commission {formatNaira(payout.commission)}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-burgundy">{formatNaira(payout.amount)}</span>
+              {payout.status !== "paid" && (
+                <Button size="sm" onClick={() => void markPaid(payout.id)}>
+                  Mark paid
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

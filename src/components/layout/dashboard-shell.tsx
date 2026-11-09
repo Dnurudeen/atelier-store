@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ReactNode } from "react";
 import { BrandLogo } from "@/components/brand/logo";
+import { PageFade } from "@/components/motion/page-fade";
 import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
+import { useAuthStore } from "@/store/auth";
 
 export type DashNavItem = {
   href: string;
@@ -25,6 +27,8 @@ export function DashboardShell({
   homeHref?: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const logout = useAuthStore((s) => s.logout);
 
   return (
     <div className="min-h-screen bg-surface-warm">
@@ -52,14 +56,24 @@ export function DashboardShell({
               );
             })}
           </nav>
-          <div className="border-t border-white/10 p-3">
+          <div className="space-y-1 border-t border-white/10 p-3">
             <Link
               href="/"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/70 hover:bg-white/10 hover:text-white"
             >
-              <LogOut size={16} />
               Back to store
             </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+                router.push("/login");
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <LogOut size={16} />
+              Sign out
+            </button>
           </div>
         </aside>
 
@@ -80,7 +94,9 @@ export function DashboardShell({
               </div>
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-8">{children}</main>
+          <main className="flex-1 p-4 md:p-8">
+            <PageFade>{children}</PageFade>
+          </main>
         </div>
       </div>
     </div>

@@ -1,55 +1,68 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/auth";
 
 export default function AccountProfilePage() {
   const user = useAuthStore((s) => s.user);
-  const [saved, setSaved] = useState(false);
-  const [form, setForm] = useState({
-    name: user?.name ?? "Ada Customer",
-    email: user?.email ?? "customer@atelier.ng",
-    phone: "+234 801 234 5678",
-  });
+  const setSession = useAuthStore((s) => s.setSession);
+  const token = useAuthStore((s) => s.token);
+  const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function onSubmit(e: FormEvent) {
+  useEffect(() => {
+    setName(user?.name || "");
+    setPhone(user?.phone || "");
+  }, [user]);
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      const res = await api<{ data: { id: number; name: string; email: string; phone?: string | null; avatar?: string | null; roles?: string[] } }>(
+        "/account/profile",
+        {
+          method: "PUT",
+          body: { name, phone },
+        }
+      );
+      if (token) {
+        setSession(
+          {
+            ...res.data,
+            roles: res.data.roles || user?.roles || ["customer"],
+            store: user?.store,
+          },
+          token
+        );
+      }
+      setMessage("Profile updated.");
+    } catch (err) {
+      setError((err as { message?: string })?.message || "Unable to update profile");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <div className="max-w-xl space-y-6">
-      <div>
-        <h2 className="font-display text-2xl">Profile</h2>
-        <p className="mt-1 text-sm text-muted">Your account details for orders and receipts.</p>
-      </div>
-      <form
-        onSubmit={onSubmit}
-        className="space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
-      >
-        <Input
-          label="Full name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        <Input
-          label="Email"
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-        />
-        <Input
-          label="Phone"
-          value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
-        />
-        <Input label="New password" type="password" placeholder="Leave blank to keep current" />
-        {saved ? <p className="text-sm text-emerald-700">Profile updated (demo).</p> : null}
-        <Button type="submit">Save changes</Button>
-      </form>
-    </div>
+    <form onSubmit={onSubmit} className="max-w-lg space-y-4 rounded-2xl border border-border bg-white p-6">
+      <h2 className="font-display text-2xl">Profile</h2>
+      <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Input label="Email" value={user?.email || ""} disabled />
+      <Input label="Phone" value={phone || ""} onChange={(e) => setPhone(e.target.value)} />
+      {message && <p className="text-sm text-emerald-700">{message}</p>}
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <Button type="submit" loading={saving}>
+        Save changes
+      </Button>
+    </form>
   );
 }

@@ -1,60 +1,138 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { api, type Address } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { demoAddresses, type DemoAddress } from "@/lib/demo-dashboard";
+import { Input } from "@/components/ui/input";
+
+const empty = {
+  label: "Home",
+  full_name: "",
+  phone: "",
+  address_line: "",
+  city: "",
+  state: "",
+  country: "Nigeria",
+  is_default: true,
+};
 
 export default function AccountAddressesPage() {
-  const [addresses, setAddresses] = useState<DemoAddress[]>(demoAddresses);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [form, setForm] = useState(empty);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function setDefault(id: number) {
-    setAddresses((list) => list.map((a) => ({ ...a, isDefault: a.id === id })));
+  async function load() {
+    const res = await api<{ data: Address[] }>("/account/addresses");
+    setAddresses(res.data || []);
+  }
+
+  useEffect(() => {
+    void load().catch((err) => setError(err?.message || "Unable to load addresses"));
+  }, []);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await api("/account/addresses", { method: "POST", body: form });
+      setForm(empty);
+      await load();
+    } catch (err) {
+      setError((err as { message?: string })?.message || "Unable to save address");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove(id: number) {
+    await api(`/account/addresses/${id}`, { method: "DELETE" });
+    await load();
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-2xl">Addresses</h2>
-          <p className="mt-1 text-sm text-muted">Where we deliver your orders.</p>
-        </div>
-        <Button variant="outline" size="sm" type="button">
-          Add address
-        </Button>
-      </div>
-      <ul className="grid gap-4 md:grid-cols-2">
-        {addresses.map((addr) => (
-          <li
-            key={addr.id}
-            className="rounded-2xl border border-border bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <p className="font-medium">
-                {addr.label}
-                {addr.isDefault ? (
-                  <span className="ml-2 rounded-full bg-burgundy/10 px-2 py-0.5 text-xs text-burgundy">
-                    Default
-                  </span>
-                ) : null}
-              </p>
+    <div className="grid gap-8 lg:grid-cols-2">
+      <div className="space-y-4">
+        <h2 className="font-display text-2xl">Saved addresses</h2>
+        {error && <p className="text-sm text-crimson">{error}</p>}
+        {addresses.map((address) => (
+          <div key={address.id} className="rounded-2xl border border-border bg-white p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium">
+                  {address.label || "Address"}{" "}
+                  {address.is_default ? (
+                    <span className="text-xs text-crimson">(default)</span>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  {address.full_name} · {address.phone}
+                </p>
+                <p className="text-sm text-muted">
+                  {address.address_line}, {address.city}, {address.state}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => void remove(address.id)}>
+                Delete
+              </Button>
             </div>
-            <p className="mt-2 text-sm text-foreground">{addr.name}</p>
-            <p className="text-sm text-muted">{addr.phone}</p>
-            <p className="mt-2 text-sm text-muted">
-              {addr.line1}, {addr.city}, {addr.state}
-            </p>
-            {!addr.isDefault ? (
-              <button
-                type="button"
-                onClick={() => setDefault(addr.id)}
-                className="mt-4 text-sm font-medium text-burgundy hover:underline"
-              >
-                Set as default
-              </button>
-            ) : null}
-          </li>
+          </div>
         ))}
-      </ul>
+        {addresses.length === 0 && <p className="text-sm text-muted">No addresses yet.</p>}
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-white p-6">
+        <h3 className="font-display text-xl">Add address</h3>
+        <Input
+          label="Label"
+          value={form.label}
+          onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+        />
+        <Input
+          label="Full name"
+          value={form.full_name}
+          onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+          required
+        />
+        <Input
+          label="Phone"
+          value={form.phone}
+          onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+          required
+        />
+        <Input
+          label="Address"
+          value={form.address_line}
+          onChange={(e) => setForm((f) => ({ ...f, address_line: e.target.value }))}
+          required
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="City"
+            value={form.city}
+            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+            required
+          />
+          <Input
+            label="State"
+            value={form.state}
+            onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+            required
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.is_default}
+            onChange={(e) => setForm((f) => ({ ...f, is_default: e.target.checked }))}
+          />
+          Set as default
+        </label>
+        <Button type="submit" loading={saving}>
+          Save address
+        </Button>
+      </form>
     </div>
   );
 }

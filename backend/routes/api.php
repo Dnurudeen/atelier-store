@@ -7,11 +7,15 @@ use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\VendorController;
 use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureVendor;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
     Route::get('/categories', [CatalogController::class, 'categories']);
     Route::get('/banners', [CatalogController::class, 'banners']);
@@ -35,14 +39,17 @@ Route::prefix('v1')->group(function () {
         Route::get('/account/orders/{id}', [AccountController::class, 'order']);
         Route::get('/account/addresses', [AccountController::class, 'addresses']);
         Route::post('/account/addresses', [AccountController::class, 'storeAddress']);
+        Route::put('/account/addresses/{id}', [AccountController::class, 'updateAddress']);
+        Route::delete('/account/addresses/{id}', [AccountController::class, 'deleteAddress']);
         Route::get('/account/wishlist', [AccountController::class, 'wishlist']);
         Route::post('/account/wishlist', [AccountController::class, 'toggleWishlist']);
         Route::post('/account/reviews', [AccountController::class, 'review']);
         Route::match(['get', 'put'], '/account/profile', [AccountController::class, 'profile']);
 
-        Route::prefix('vendor')->group(function () {
+        Route::post('/vendor/onboarding', [VendorController::class, 'onboarding']);
+
+        Route::prefix('vendor')->middleware([EnsureVendor::class])->group(function () {
             Route::get('/overview', [VendorController::class, 'overview']);
-            Route::post('/onboarding', [VendorController::class, 'onboarding']);
             Route::get('/products', [VendorController::class, 'products']);
             Route::post('/products', [VendorController::class, 'storeProduct']);
             Route::put('/products/{id}', [VendorController::class, 'updateProduct']);
@@ -52,7 +59,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/settings', [VendorController::class, 'settings']);
         });
 
-        Route::prefix('admin')->group(function () {
+        Route::prefix('admin')->middleware([EnsureAdmin::class])->group(function () {
             Route::get('/overview', [AdminController::class, 'overview']);
             Route::get('/vendors', [AdminController::class, 'vendors']);
             Route::put('/vendors/{id}', [AdminController::class, 'updateVendor']);

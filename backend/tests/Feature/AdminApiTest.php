@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Mail\VendorStatusMail;
 use App\Models\Payout;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\CreatesMarketplaceData;
 use Tests\TestCase;
 
@@ -15,6 +17,8 @@ class AdminApiTest extends TestCase
 
     public function test_overview_and_vendor_approval_flow(): void
     {
+        Mail::fake();
+
         $admin = $this->makeAdmin();
         [, $pending] = $this->makeVendor(['status' => 'pending']);
         $this->makeUser(['role' => 'customer']);
@@ -31,6 +35,8 @@ class AdminApiTest extends TestCase
             ->putJson('/api/v1/admin/vendors/' . $pending->id, ['status' => 'approved'])
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
+
+        Mail::assertSent(VendorStatusMail::class);
 
         $this->withHeaders($this->authHeaders($admin))
             ->getJson('/api/v1/admin/vendors')
@@ -153,5 +159,24 @@ class AdminApiTest extends TestCase
     public function test_admin_endpoints_require_authentication(): void
     {
         $this->getJson('/api/v1/admin/overview')->assertUnauthorized();
+    }
+
+    public function test_customer_cannot_access_admin_endpoints(): void
+    {
+        $customer = $this->makeUser(['role' => 'customer']);
+        [, $pending] = $this->makeVendor(['status' => 'pending']);
+
+        $this->withHeaders($this->authHeaders($customer))
+            ->getJson('/api/v1/admin/overview')
+            ->assertForbidden();
+
+        $this->withHeaders($this->authHeaders($customer))
+            ->putJson('/api/v1/admin/vendors/' . $pending->id, ['status' => 'approved'])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('stores', [
+            'id' => $pending->id,
+            'status' => 'pending',
+        ]);
     }
 }

@@ -1,40 +1,63 @@
-import Image from "next/image";
+"use client";
+
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { demoVendorProducts } from "@/lib/demo-dashboard";
+import { useEffect, useState } from "react";
+import { api, type Product } from "@/lib/api";
 import { formatNaira } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export default function VendorProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    void api<{ data: Product[] }>("/vendor/products")
+      .then((res) => setProducts(res.data || []))
+      .catch((err) => setError(err?.message || "Unable to load products"));
+  }, []);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-2xl">Products</h2>
-          <p className="mt-1 text-sm text-muted">Manage listings in your storefront.</p>
-        </div>
-        <Link href="/vendor/products/new">
-          <Button size="sm">Add product</Button>
-        </Link>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-2xl">Products</h2>
+        <Button onClick={() => (window.location.href = "/vendor/products/new")}>New product</Button>
       </div>
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-white">
-        {demoVendorProducts.map((product) => {
-          const img = product.images?.[0]?.url;
-          return (
-            <li key={product.id} className="flex flex-wrap items-center gap-4 p-4">
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-surface">
-                {img ? <Image src={img} alt="" fill className="object-cover" sizes="56px" /> : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{product.name}</p>
-                <p className="text-sm text-muted">
-                  Stock {product.stock} · {product.status}
-                </p>
-              </div>
-              <p className="font-semibold text-burgundy">{formatNaira(product.price)}</p>
-            </li>
-          );
-        })}
-      </ul>
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <div className="overflow-hidden rounded-2xl border border-border bg-white">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-surface text-xs tracking-wider text-muted uppercase">
+            <tr>
+              <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Stock</th>
+              <th className="px-4 py-3 text-right">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((product) => (
+              <tr key={product.id} className="border-t border-border">
+                <td className="px-4 py-3">
+                  <Link href={`/product/${product.slug}`} className="font-medium hover:text-burgundy">
+                    {product.name}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 capitalize">{product.status}</td>
+                <td className="px-4 py-3">{product.stock}</td>
+                <td className="px-4 py-3 text-right font-semibold text-burgundy">
+                  {formatNaira(product.price)}
+                </td>
+              </tr>
+            ))}
+            {products.length === 0 && !error && (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-muted">
+                  No products yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

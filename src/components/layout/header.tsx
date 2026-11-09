@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { Menu, Search, ShoppingBag, User, X, LogOut } from "lucide-react";
 import { BrandLogo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart";
+import { useAuthStore } from "@/store/auth";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -24,6 +25,14 @@ export function Header() {
   const [query, setQuery] = useState("");
   const count = useCartStore((s) => s.count());
   const openCart = useCartStore((s) => s.open);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
+  const accountHref = user?.roles?.includes("admin")
+    ? "/admin"
+    : user?.roles?.includes("vendor")
+      ? "/vendor"
+      : "/account";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -73,13 +82,32 @@ export function Header() {
           >
             <Search size={18} />
           </button>
-          <Link
-            href="/account"
-            className="hidden rounded-full p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy sm:inline-flex"
-            aria-label="Account"
-          >
-            <User size={18} />
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href={accountHref}
+                className="hidden rounded-full p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy sm:inline-flex"
+                aria-label="Account"
+              >
+                <User size={18} />
+              </Link>
+              <button
+                className="hidden rounded-full p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy sm:inline-flex"
+                onClick={() => void logout()}
+                aria-label="Sign out"
+              >
+                <LogOut size={18} />
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden rounded-full p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy sm:inline-flex"
+              aria-label="Sign in"
+            >
+              <User size={18} />
+            </Link>
+          )}
           <button
             className="relative rounded-full p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy"
             onClick={openCart}
@@ -141,13 +169,35 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface"
-            >
-              Sign in
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href={accountHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    void logout();
+                  }}
+                  className="rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:bg-surface"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface"
+              >
+                Sign in
+              </Link>
+            )}
           </nav>
         </div>
       )}

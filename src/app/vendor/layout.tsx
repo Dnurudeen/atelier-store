@@ -1,5 +1,8 @@
+"use client";
+
 import { ReactNode } from "react";
 import { DashboardShell, type DashNavItem } from "@/components/layout/dashboard-shell";
+import { RequireAuth } from "@/components/auth/require-auth";
 import {
   LayoutDashboard,
   Store,
@@ -22,8 +25,10 @@ const nav: DashNavItem[] = [
 
 export default function VendorLayout({ children }: { children: ReactNode }) {
   return (
-    <DashboardShell title="Vendor" nav={nav}>
-      {children}
-    </DashboardShell>
+    <RequireAuth roles={["vendor", "admin"]}>
+      <DashboardShell title="Vendor" nav={nav}>
+        {children}
+      </DashboardShell>
+    </RequireAuth>
   );
 }

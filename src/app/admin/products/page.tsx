@@ -1,45 +1,55 @@
-import Image from "next/image";
-import { demoModerationProducts } from "@/lib/demo-dashboard";
-import { formatNaira, cn } from "@/lib/utils";
+"use client";
 
-const modStyles = {
-  pending: "bg-amber-50 text-amber-900 ring-amber-200",
-  flagged: "bg-rose-50 text-rose-900 ring-rose-200",
-  approved: "bg-emerald-50 text-emerald-900 ring-emerald-200",
-};
+import { useEffect, useState } from "react";
+import { api, type Product } from "@/lib/api";
+import { formatNaira } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export default function AdminProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState("");
+
+  async function load() {
+    const res = await api<{ data: Product[] }>("/admin/products");
+    setProducts(res.data || []);
+  }
+
+  useEffect(() => {
+    void load().catch((err) => setError(err?.message || "Unable to load products"));
+  }, []);
+
+  async function moderate(id: number, status: "published" | "rejected") {
+    await api(`/admin/products/${id}`, { method: "PUT", body: { status } });
+    await load();
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-2xl">Product moderation</h2>
-        <p className="mt-1 text-sm text-muted">Review listings before they reach the storefront.</p>
+      <h2 className="font-display text-2xl">Product moderation</h2>
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <div className="space-y-3">
+        {products.map((product) => (
+          <div
+            key={product.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-white p-4"
+          >
+            <div>
+              <p className="font-medium">{product.name}</p>
+              <p className="text-sm text-muted">
+                {product.store?.name} · {product.status} · {formatNaira(product.price)}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => void moderate(product.id, "published")}>
+                Publish
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => void moderate(product.id, "rejected")}>
+                Reject
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
-      <ul className="divide-y divide-border rounded-2xl border border-border bg-white">
-        {demoModerationProducts.map((product) => {
-          const img = product.images?.[0]?.url;
-          return (
-            <li key={product.id} className="flex flex-wrap items-center gap-4 p-4">
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-surface">
-                {img ? <Image src={img} alt="" fill className="object-cover" sizes="56px" /> : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{product.name}</p>
-                <p className="text-sm text-muted">{product.store?.name}</p>
-              </div>
-              <span
-                className={cn(
-                  "rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset",
-                  modStyles[product.moderationStatus]
-                )}
-              >
-                {product.moderationStatus}
-              </span>
-              <span className="font-semibold text-burgundy">{formatNaira(product.price)}</span>
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 }

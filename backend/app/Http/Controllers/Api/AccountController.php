@@ -64,6 +64,39 @@ class AccountController extends Controller
         return response()->json(['data' => $address], 201);
     }
 
+    public function updateAddress(Request $request, int $id)
+    {
+        $address = Address::where('user_id', $request->user()->id)->findOrFail($id);
+
+        $data = $request->validate([
+            'label' => ['nullable', 'string'],
+            'full_name' => ['sometimes', 'string'],
+            'phone' => ['sometimes', 'string'],
+            'address_line' => ['sometimes', 'string'],
+            'city' => ['sometimes', 'string'],
+            'state' => ['sometimes', 'string'],
+            'country' => ['nullable', 'string'],
+            'postal_code' => ['nullable', 'string'],
+            'is_default' => ['sometimes', 'boolean'],
+        ]);
+
+        if (! empty($data['is_default'])) {
+            Address::where('user_id', $request->user()->id)->update(['is_default' => false]);
+        }
+
+        $address->update($data);
+
+        return response()->json(['data' => $address->fresh()]);
+    }
+
+    public function deleteAddress(Request $request, int $id)
+    {
+        $address = Address::where('user_id', $request->user()->id)->findOrFail($id);
+        $address->delete();
+
+        return response()->json(['message' => 'Address deleted']);
+    }
+
     public function wishlist(Request $request)
     {
         $items = Wishlist::with('product.images', 'product.store')

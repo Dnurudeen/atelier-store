@@ -1,80 +1,111 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api, type Category } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { demoCategories } from "@/lib/demo-data";
 
 export default function VendorNewProductPage() {
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    stock: "1",
+    category_id: "",
+    image_url: "",
+  });
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    void api<{ data: Category[] }>("/categories")
+      .then((res) => setCategories(res.data || []))
+      .catch(() => setCategories([]));
+  }, []);
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
+    setError("");
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vendor/products`, { method: "POST" });
-    } catch {
-      // demo
+      await api("/vendor/products", {
+        method: "POST",
+        body: {
+          name: form.name,
+          description: form.description,
+          price: Number(form.price),
+          stock: Number(form.stock),
+          category_id: form.category_id ? Number(form.category_id) : null,
+          image_url: form.image_url || null,
+        },
+      });
+      router.push("/vendor/products");
+    } catch (err) {
+      setError((err as { message?: string })?.message || "Unable to create product");
+    } finally {
+      setSaving(false);
     }
-    await new Promise((r) => setTimeout(r, 700));
-    setLoading(false);
-    setSuccess(true);
-  }
-
-  if (success) {
-    return (
-      <div className="max-w-lg rounded-2xl border border-border bg-white p-8">
-        <h2 className="font-display text-2xl">Product created</h2>
-        <p className="mt-2 text-sm text-muted">Your listing is live in demo mode.</p>
-        <Link href="/vendor/products" className="mt-6 inline-block">
-          <Button variant="outline">Back to products</Button>
-        </Link>
-      </div>
-    );
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
-        <h2 className="font-display text-2xl">New product</h2>
-        <p className="mt-1 text-sm text-muted">Add a handcrafted piece to your store.</p>
+    <form onSubmit={onSubmit} className="max-w-2xl space-y-4 rounded-2xl border border-border bg-white p-6">
+      <h2 className="font-display text-2xl">New product</h2>
+      <Input
+        label="Name"
+        value={form.name}
+        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+        required
+      />
+      <Textarea
+        label="Description"
+        value={form.description}
+        onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Input
+          label="Price (NGN)"
+          type="number"
+          value={form.price}
+          onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+          required
+        />
+        <Input
+          label="Stock"
+          type="number"
+          value={form.stock}
+          onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+          required
+        />
       </div>
-      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-white p-6">
-        <Input name="name" label="Product name" required />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input name="price" label="Price (₦)" type="number" required min={1000} />
-          <Input name="stock" label="Stock" type="number" required min={0} defaultValue={5} />
-        </div>
-        <label className="block space-y-1.5">
-          <span className="text-sm font-medium text-foreground/80">Category</span>
-          <select
-            name="category"
-            className="h-11 w-full rounded-xl border border-border bg-white px-3.5 text-sm outline-none focus:border-burgundy focus:ring-2 focus:ring-burgundy/15"
-            required
-          >
-            {demoCategories.map((c) => (
-              <option key={c.id} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Textarea name="description" label="Description" rows={5} required />
-        <Input name="imageUrl" label="Image URL (optional)" placeholder="https://…" />
-        <div className="flex gap-3">
-          <Link href="/vendor/products">
-            <Button type="button" variant="outline">
-              Cancel
-            </Button>
-          </Link>
-          <Button type="submit" loading={loading}>
-            Publish product
-          </Button>
-        </div>
-      </form>
-    </div>
+      <label className="block text-sm">
+        <span className="mb-1.5 block font-medium">Category</span>
+        <select
+          className="h-11 w-full rounded-xl border border-border bg-white px-3"
+          value={form.category_id}
+          onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
+        >
+          <option value="">Select category</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Input
+        label="Image URL"
+        value={form.image_url}
+        onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
+        placeholder="https://..."
+      />
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <Button type="submit" loading={saving}>
+        Create product
+      </Button>
+    </form>
   );
 }

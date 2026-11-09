@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageFade } from "@/components/motion/page-fade";
 import { useAuthStore } from "@/store/auth";
 
 function RegisterForm() {
@@ -12,7 +13,7 @@ function RegisterForm() {
   const params = useSearchParams();
   const register = useAuthStore((s) => s.register);
   const loading = useAuthStore((s) => s.loading);
-  const asVendor = params.get("as") === "vendor";
+  const asVendor = params.get("as") === "vendor" || params.get("role") === "vendor";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,7 +56,7 @@ function RegisterForm() {
   }
 
   return (
-    <div className="container-atelier flex min-h-[70vh] items-center justify-center py-16">
+    <PageFade className="container-atelier flex min-h-[70vh] items-center justify-center py-16">
       <div className="w-full max-w-md rounded-3xl border border-border bg-white p-8 shadow-sm">
         <p className="text-xs font-medium tracking-[0.2em] text-crimson uppercase">
           {asVendor ? "Vendor application" : "Join Atelier"}
@@ -98,7 +99,7 @@ function RegisterForm() {
           </Link>
         </p>
       </div>
-    </div>
+    </PageFade>
   );
 }
 
