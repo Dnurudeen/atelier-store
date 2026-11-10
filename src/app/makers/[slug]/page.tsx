@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { MapPin, Package, Star } from "lucide-react";
+import { ShareLinks } from "@/components/products/share-links";
+import { SellerScore } from "@/components/products/seller-score";
 import { ProductCard } from "@/components/products/product-card";
 import { AppImage } from "@/components/ui/app-image";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -85,6 +87,12 @@ async function MakerStorefront({ params }: PageProps) {
                 {products.length} {products.length === 1 ? "piece" : "pieces"}
               </span>
             </div>
+            <div className="mt-4">
+              <ShareLinks path={`/makers/${store.slug}`} title={store.name} />
+            </div>
+          </div>
+          <div className="w-full max-w-sm rounded-2xl bg-surface p-4">
+            <SellerScore score={store.seller_score} />
           </div>
         </div>
 

@@ -26,6 +26,12 @@ export default function AdminPayoutsPage() {
     void load().catch((err) => setError(err?.message || "Unable to load payouts"));
   }, []);
 
+  async function closeWeek() {
+    setError("");
+    await api("/admin/statements/close", { method: "POST" });
+    await load();
+  }
+
   async function markPaid(id: number) {
     await api(`/admin/payouts/${id}`, {
       method: "PUT",
@@ -36,7 +42,15 @@ export default function AdminPayoutsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl">Payouts</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-2xl">Payouts</h2>
+          <p className="text-sm text-muted">Close the week to turn each store&apos;s pending delivered balance into one payout.</p>
+        </div>
+        <Button variant="outline" onClick={() => void closeWeek()}>
+          Close this week
+        </Button>
+      </div>
       {error && <p className="text-sm text-crimson">{error}</p>}
       <div className="space-y-3">
         {payouts.map((payout) => (

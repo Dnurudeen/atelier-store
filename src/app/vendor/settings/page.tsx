@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { api, type Store } from "@/lib/api";
+import { ShareLinks } from "@/components/products/share-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,12 +18,14 @@ export default function VendorSettingsPage() {
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [slug, setSlug] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     void api<{ data: { store: Store } }>("/vendor/overview")
       .then((res) => {
         const store = res.data.store;
+        setSlug(store.slug);
         setForm({
           name: store.name || "",
           bio: store.bio || "",
@@ -59,6 +62,14 @@ export default function VendorSettingsPage() {
   return (
     <form onSubmit={onSubmit} className="max-w-2xl space-y-4 rounded-2xl border border-border bg-white p-6">
       <h2 className="font-display text-2xl">Store settings</h2>
+      {slug && (
+        <div className="space-y-2 rounded-xl bg-surface p-4">
+          <p className="text-sm text-muted">
+            Your store is a page on Atelier at <span className="text-burgundy">/makers/{slug}</span>
+          </p>
+          <ShareLinks path={`/makers/${slug}`} title={form.name || "My store"} />
+        </div>
+      )}
       <Input label="Store name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
       <Textarea label="Bio" value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
       <Input

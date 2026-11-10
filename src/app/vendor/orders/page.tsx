@@ -16,6 +16,7 @@ type VendorOrder = {
 };
 
 function mapStatus(status: string): OrderStatus {
+  if (status === "returned") return "returned";
   if (status === "completed" || status === "delivered") return "delivered";
   if (status === "shipped") return "shipped";
   if (status === "cancelled") return "cancelled";
@@ -36,10 +37,10 @@ export default function VendorOrdersPage() {
     void load().catch((err) => setError(err?.message || "Unable to load orders"));
   }, []);
 
-  async function markShipped(id: number) {
+  async function setStatus(id: number, status: string, tracking?: string) {
     await api(`/vendor/orders/${id}`, {
       method: "PUT",
-      body: { status: "shipped" },
+      body: { status, tracking_number: tracking || null },
     });
     await load();
   }
@@ -60,9 +61,25 @@ export default function VendorOrdersPage() {
             </div>
             <div className="flex items-center gap-3">
               <StatusBadge status={mapStatus(order.status)} />
-              {order.status !== "shipped" && order.status !== "completed" && (
-                <Button size="sm" variant="outline" onClick={() => void markShipped(order.id)}>
-                  Mark shipped
+              {order.status !== "delivered" && order.status !== "completed" && order.status !== "cancelled" && (
+                <>
+                  <Button size="sm" variant="outline" onClick={() => void setStatus(order.id, "processing")}>
+                    Processing
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => void setStatus(order.id, "shipped", order.tracking_number || undefined)}>
+                    Shipped
+                  </Button>
+                  <Button size="sm" onClick={() => void setStatus(order.id, "delivered")}>
+                    Delivered
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => void setStatus(order.id, "cancelled")}>
+                    Cancel
+                  </Button>
+                </>
+              )}
+              {(order.status === "delivered" || order.status === "completed") && (
+                <Button size="sm" variant="outline" onClick={() => void setStatus(order.id, "returned")}>
+                  Returned
                 </Button>
               )}
             </div>

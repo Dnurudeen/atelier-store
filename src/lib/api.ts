@@ -99,9 +99,27 @@ export type Store = {
   location?: string | null;
   rating?: number | string;
   products_count?: number;
+  seller_score?: SellerScore | null;
   status: "pending" | "approved" | "rejected" | "suspended";
   shipping_fee?: number | string;
   user?: User;
+};
+
+export type SellerScore = {
+  score: number | null;
+  shipping_speed: number | null;
+  customer_rating: number | null;
+  cancellation_rate: number | null;
+  return_rate: number | null;
+  orders?: number;
+};
+
+export type Review = {
+  id: number;
+  rating: number;
+  comment?: string | null;
+  created_at?: string;
+  user?: { id: number; name: string };
 };
 
 export type ProductImage = {
@@ -124,17 +142,21 @@ export type Product = {
   name: string;
   slug: string;
   description?: string | null;
+  specs?: { medium?: string; dimensions?: string; materials?: string } | null;
   price: number | string;
   compare_at_price?: number | string | null;
+  sale_ends_at?: string | null;
   stock: number;
   status: "draft" | "pending" | "published" | "rejected";
   is_featured?: boolean;
+  is_sponsored?: boolean;
   rating?: number | string;
   reviews_count?: number;
   category?: Category;
   store?: Store;
   images?: ProductImage[];
   variants?: ProductVariant[];
+  reviews?: Review[];
   tags?: { id: number; name: string; slug: string }[];
 };
 

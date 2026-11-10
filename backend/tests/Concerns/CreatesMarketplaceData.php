@@ -4,10 +4,13 @@ namespace Tests\Concerns;
 
 use App\Models\Banner;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Setting;
 use App\Models\Store;
+use App\Models\SubOrder;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -99,6 +102,42 @@ trait CreatesMarketplaceData
         ]);
 
         return $product->fresh('images', 'store', 'category');
+    }
+
+    protected function paidSubOrder(User $buyer, Product $product, array $subOverrides = []): SubOrder
+    {
+        $price = (float) $product->price;
+        $order = Order::create([
+            'order_number' => 'ATL-'.strtoupper(Str::random(6)),
+            'user_id' => $buyer->id,
+            'status' => 'processing',
+            'payment_status' => 'paid',
+            'subtotal' => $price,
+            'shipping_total' => 0,
+            'total' => $price,
+        ]);
+
+        $subOrder = SubOrder::create(array_merge([
+            'order_id' => $order->id,
+            'store_id' => $product->store_id,
+            'status' => 'paid',
+            'subtotal' => $price,
+            'shipping_fee' => 0,
+            'total' => $price,
+            'commission' => 0,
+            'vendor_earning' => $price,
+        ], $subOverrides));
+
+        OrderItem::create([
+            'sub_order_id' => $subOrder->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'quantity' => 1,
+            'unit_price' => $price,
+            'total' => $price,
+        ]);
+
+        return $subOrder->fresh('order');
     }
 
     protected function makeBanner(array $overrides = []): Banner

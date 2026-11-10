@@ -92,10 +92,28 @@ class AccountApiTest extends TestCase
         $this->assertSame(0, Wishlist::count());
     }
 
+    public function test_review_requires_a_delivered_purchase(): void
+    {
+        $user = $this->makeUser();
+        $product = $this->makeProduct(null, null, ['rating' => 0, 'reviews_count' => 0]);
+
+        $this->withHeaders($this->authHeaders($user))->postJson('/api/v1/account/reviews', [
+            'product_id' => $product->id,
+            'rating' => 5,
+        ])->assertStatus(422);
+
+        $this->assertSame(0, $product->fresh()->reviews_count);
+    }
+
     public function test_review_updates_product_rating(): void
     {
         $user = $this->makeUser();
         $product = $this->makeProduct(null, null, ['rating' => 0, 'reviews_count' => 0]);
+        $this->paidSubOrder($user, $product, [
+            'status' => 'delivered',
+            'delivered_at' => now(),
+            'shipped_at' => now(),
+        ]);
 
         $this->withHeaders($this->authHeaders($user))->postJson('/api/v1/account/reviews', [
             'product_id' => $product->id,

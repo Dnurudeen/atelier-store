@@ -4,7 +4,8 @@ export const media = {
   fallback: "/media/fallback.jpg",
   hero: (n: 1 | 2 | 3) => `/media/hero/hero-${n}.jpg`,
   category: (slug: string) => `/media/categories/${slug}.jpg`,
-  product: (n: number) => `/media/products/product-${((n - 1) % 12) + 1}.jpg`,
+  product: (n: number) => `/media/products/product-${((n - 1) % 36) + 1}.jpg`,
+  detail: (n: number) => `/media/products/gallery-${((n - 1) % 12) + 1}.jpg`,
   makerBanner: (n: number) => `/media/makers/banner-${((n - 1) % 8) + 1}.jpg`,
   makerAvatar: (n: number) => `/media/makers/avatar-${((n - 1) % 8) + 1}.jpg`,
 };

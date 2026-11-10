@@ -1,62 +1,35 @@
-import { BadgeCheck, HandHeart, ShieldCheck, Truck } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, HandHeart, ShieldCheck, Store, Truck } from "lucide-react";
 
 const items = [
-  {
-    icon: HandHeart,
-    title: "Made by hand",
-    body: "Each listing is verified as original work from independent Nigerian artisans.",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Authenticated makers",
-    body: "Vendors pass review before selling, so buyers know who crafted every piece.",
-  },
-  {
-    icon: Truck,
-    title: "Coordinated shipping",
-    body: "Carts with items from several makers are split carefully, with tracking for each parcel.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Secure checkout",
-    body: "Protected payments and clear policies for buyers and sellers alike.",
-  },
+  { icon: HandHeart, title: "Handmade", href: "/shop" },
+  { icon: BadgeCheck, title: "Verified makers", href: "/makers" },
+  { icon: Store, title: "Official stores", href: "/makers" },
+  { icon: Truck, title: "Tracked shipping", href: "/shop" },
+  { icon: ShieldCheck, title: "Secure pay", href: "/shop" },
 ];
 
 export function ValueProps() {
   return (
-    <section className="border-y border-border bg-white py-6 md:py-16">
+    <section className="bg-[var(--page-bg)] pt-3">
       <div className="container-atelier">
-        {/* Mobile compact chips */}
-        <div className="mobile-rail -mx-4 flex px-4 md:hidden">
-          {items.map((item) => (
-            <div
-              key={item.title}
-              className="flex w-[72vw] max-w-[260px] items-start gap-3 rounded-2xl border border-border bg-surface/70 p-3.5"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-burgundy/8 text-burgundy">
-                <item.icon size={16} strokeWidth={1.75} />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-display text-[0.95rem] leading-tight">{item.title}</h3>
-                <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted">{item.body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="hidden gap-8 sm:grid-cols-2 md:grid lg:grid-cols-4">
-          {items.map((item) => (
-            <div key={item.title} className="flex gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-burgundy/8 text-burgundy">
-                <item.icon size={20} strokeWidth={1.75} />
-              </div>
-              <div>
-                <h3 className="font-display text-lg">{item.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.body}</p>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-hidden rounded-md border border-border bg-white">
+          <div className="flex gap-1 overflow-x-auto px-2 py-3 md:grid md:grid-cols-5 md:gap-2 md:overflow-visible md:px-3">
+            {items.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="flex min-w-[88px] flex-col items-center gap-2 rounded-md px-2 py-1.5 text-center transition hover:bg-surface"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-burgundy text-white md:h-14 md:w-14">
+                  <item.icon size={22} strokeWidth={1.75} />
+                </span>
+                <span className="text-[11px] font-medium leading-tight text-foreground/85 md:text-xs">
+                  {item.title}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>

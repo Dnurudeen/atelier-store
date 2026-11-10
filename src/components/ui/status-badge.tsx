@@ -7,6 +7,7 @@ const styles: Record<OrderStatus, string> = {
   shipped: "bg-indigo-50 text-indigo-900 ring-indigo-200",
   delivered: "bg-emerald-50 text-emerald-900 ring-emerald-200",
   cancelled: "bg-stone-100 text-stone-600 ring-stone-200",
+  returned: "bg-rose-50 text-rose-800 ring-rose-200",
   refunded: "bg-rose-50 text-rose-800 ring-rose-200",
 };
 
@@ -16,6 +17,7 @@ const labels: Record<OrderStatus, string> = {
   shipped: "Shipped",
   delivered: "Delivered",
   cancelled: "Cancelled",
+  returned: "Returned",
   refunded: "Refunded",
 };
 

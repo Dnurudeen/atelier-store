@@ -59,6 +59,7 @@ export const demoStores: Store[] = [
     products_count: 18,
     status: "approved",
     shipping_fee: 2500,
+    seller_score: { score: 4.7, shipping_speed: 0.92, customer_rating: 4.9, cancellation_rate: 0.04, return_rate: 0.02, orders: 18 },
   },
   {
     id: 2,
@@ -72,6 +73,7 @@ export const demoStores: Store[] = [
     products_count: 24,
     status: "approved",
     shipping_fee: 3000,
+    seller_score: { score: 4.5, shipping_speed: 0.88, customer_rating: 4.8, cancellation_rate: 0.06, return_rate: 0.03, orders: 14 },
   },
   {
     id: 3,
@@ -85,6 +87,7 @@ export const demoStores: Store[] = [
     products_count: 31,
     status: "approved",
     shipping_fee: 2000,
+    seller_score: { score: 4.4, shipping_speed: 0.84, customer_rating: 4.6, cancellation_rate: 0.08, return_rate: 0.04, orders: 11 },
   },
   {
     id: 4,
@@ -98,6 +101,7 @@ export const demoStores: Store[] = [
     products_count: 22,
     status: "approved",
     shipping_fee: 2500,
+    seller_score: { score: 4.8, shipping_speed: 0.95, customer_rating: 4.9, cancellation_rate: 0.02, return_rate: 0.01, orders: 16 },
   },
 ];
 
@@ -114,6 +118,30 @@ const productSeeds = [
   { name: "Cedar Side Table", price: 125000, category: demoCategories[5], store: demoStores[1], img: 10 },
   { name: "Adire Wrap Dress", price: 62000, category: demoCategories[1], store: demoStores[3], img: 11 },
   { name: "Bronze Mask Relief", price: 198000, category: demoCategories[3], store: demoStores[0], img: 12 },
+  { name: "Harbor Light Study", price: 96000, category: demoCategories[0], store: demoStores[0], img: 13 },
+  { name: "Quiet Compound", price: 128000, category: demoCategories[0], store: demoStores[0], img: 14 },
+  { name: "Red Earth Field", price: 74000, category: demoCategories[0], store: demoStores[0], img: 15 },
+  { name: "Studio Window", price: 88000, category: demoCategories[0], store: demoStores[0], img: 16 },
+  { name: "Indigo Camp Shirt", price: 36000, category: demoCategories[1], store: demoStores[3], img: 17 },
+  { name: "Burgundy Wrap", price: 54000, category: demoCategories[1], store: demoStores[3], img: 18 },
+  { name: "Ivory Weave Polo", price: 41000, category: demoCategories[1], store: demoStores[3], img: 19 },
+  { name: "Market Day Scarf", price: 22000, category: demoCategories[1], store: demoStores[3], img: 20 },
+  { name: "Speckled Serving Bowl", price: 28000, category: demoCategories[2], store: demoStores[1], img: 21 },
+  { name: "Banded Terracotta Vase", price: 46000, category: demoCategories[2], store: demoStores[1], img: 22 },
+  { name: "Nesting Clay Cups", price: 24000, category: demoCategories[2], store: demoStores[1], img: 23 },
+  { name: "Crimson Line Platter", price: 32000, category: demoCategories[2], store: demoStores[1], img: 24 },
+  { name: "Standing Wood Figure", price: 176000, category: demoCategories[3], store: demoStores[0], img: 25 },
+  { name: "Panel Mask", price: 142000, category: demoCategories[3], store: demoStores[0], img: 26 },
+  { name: "Bronze Field Bird", price: 98000, category: demoCategories[3], store: demoStores[0], img: 27 },
+  { name: "Stacked Clay Form", price: 86000, category: demoCategories[3], store: demoStores[1], img: 28 },
+  { name: "Aba Oxford", price: 88000, category: demoCategories[4], store: demoStores[2], img: 29 },
+  { name: "Saddle Tote", price: 72000, category: demoCategories[4], store: demoStores[2], img: 30 },
+  { name: "Chestnut Belt", price: 18000, category: demoCategories[4], store: demoStores[2], img: 31 },
+  { name: "Woven Sandal", price: 34000, category: demoCategories[4], store: demoStores[2], img: 32 },
+  { name: "Indigo Chair Throw", price: 29000, category: demoCategories[5], store: demoStores[3], img: 33 },
+  { name: "Cedar Nightstand", price: 112000, category: demoCategories[5], store: demoStores[1], img: 34 },
+  { name: "Clay Table Lamp", price: 48000, category: demoCategories[5], store: demoStores[1], img: 35 },
+  { name: "Carved Serving Boards", price: 26000, category: demoCategories[5], store: demoStores[1], img: 36 },
 ];
 
 export const demoProducts: Product[] = productSeeds.map((seed, index) => ({
@@ -133,9 +161,44 @@ export const demoProducts: Product[] = productSeeds.map((seed, index) => ({
   store: seed.store,
   images: [
     { id: index * 10 + 1, url: media.product(seed.img), is_primary: true },
-    { id: index * 10 + 2, url: media.product(seed.img + 1), is_primary: false },
+    ...(seed.img <= 12
+      ? [{ id: index * 10 + 2, url: media.detail(seed.img), is_primary: false }]
+      : []),
   ],
-  variants: [],
+  is_sponsored: index % 9 === 0,
+  specs:
+    seed.category.slug === "fine-art" || seed.category.slug === "sculpture"
+      ? { medium: "Oil and pigment", dimensions: "80 × 100 cm" }
+      : { materials: "Made by hand in Nigeria", dimensions: "See maker note" },
+  reviews:
+    index === 0
+      ? [
+          {
+            id: 1,
+            rating: 5,
+            comment: "The color in person is even richer than the photo. Packed with care.",
+            user: { id: 1, name: "Ada Okafor" },
+          },
+        ]
+      : [],
+  variants:
+    seed.category.slug === "fashion" || seed.category.slug === "leatherwork"
+      ? [
+          {
+            id: index * 10 + 3,
+            name: "Indigo / M",
+            stock: 3,
+            attributes: { color: "Indigo", size: "M" },
+          },
+          {
+            id: index * 10 + 4,
+            name: "Cream / L",
+            stock: 2,
+            price: seed.price + 2000,
+            attributes: { color: "Cream", size: "L" },
+          },
+        ]
+      : [],
   tags: [],
 }));
 

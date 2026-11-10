@@ -18,6 +18,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
+    Route::get('/home-feed', [CatalogController::class, 'home']);
     Route::get('/categories', [CatalogController::class, 'categories']);
     Route::get('/banners', [CatalogController::class, 'banners']);
     Route::get('/products', [CatalogController::class, 'products']);
@@ -58,6 +59,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/orders', [VendorController::class, 'orders']);
             Route::put('/orders/{id}', [VendorController::class, 'updateOrder']);
             Route::get('/earnings', [VendorController::class, 'earnings']);
+            Route::get('/statements', [VendorController::class, 'statements']);
+            Route::get('/sponsorships', [VendorController::class, 'sponsorships']);
+            Route::post('/sponsorships', [VendorController::class, 'storeSponsorship']);
+            Route::put('/sponsorships/{id}', [VendorController::class, 'updateSponsorship']);
             Route::put('/settings', [VendorController::class, 'settings']);
         });
 
@@ -75,6 +80,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/banners/{id}', [AdminController::class, 'updateBanner']);
             Route::get('/payouts', [AdminController::class, 'payouts']);
             Route::put('/payouts/{id}', [AdminController::class, 'updatePayout']);
+            Route::post('/statements/close', [AdminController::class, 'closeStatements']);
             Route::match(['get', 'put'], '/settings', [AdminController::class, 'settings']);
         });
     });

@@ -1,6 +1,19 @@
 import { api, type Banner, type Category, type Product, type Store } from "./api";
 import { demoBanners, demoCategories, demoProducts, demoStores } from "./demo-data";
 
+export type HomeRail = {
+  category?: Category;
+  store?: Store;
+  products: Product[];
+};
+
+export type HomeFeed = {
+  deals: Product[];
+  sponsored: Product[];
+  categories: { category: Category; products: Product[] }[];
+  stores: { store: Store; products: Product[] }[];
+};
+
 const USE_DEMO = process.env.NEXT_PUBLIC_USE_DEMO === "true";
 
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
@@ -24,6 +37,57 @@ export async function getBanners(): Promise<Banner[]> {
     const res = await api<{ data: Banner[] }>("/banners");
     return res.data;
   }, demoBanners);
+}
+
+function uniqueByImage(products: Product[], limit: number) {
+  const seen = new Set<string>();
+  const picked: Product[] = [];
+  for (const product of products) {
+    const key = product.images?.[0]?.url || `id:${product.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    picked.push(product);
+    if (picked.length >= limit) break;
+  }
+  return picked;
+}
+
+function demoHomeFeed(): HomeFeed {
+  const deals = uniqueByImage(
+    demoProducts.filter((product) => Number(product.compare_at_price) > Number(product.price)),
+    12
+  );
+  const sponsored = uniqueByImage(
+    demoProducts.filter((product) => product.is_sponsored),
+    12
+  );
+  const categories = demoCategories
+    .map((category) => ({
+      category,
+      products: uniqueByImage(
+        demoProducts.filter((product) => product.category?.slug === category.slug),
+        8
+      ),
+    }))
+    .filter((row) => row.products.length > 0);
+  const stores = demoStores
+    .map((store) => ({
+      store,
+      products: uniqueByImage(
+        demoProducts.filter((product) => product.store?.slug === store.slug),
+        8
+      ),
+    }))
+    .filter((row) => row.products.length > 0);
+
+  return { deals, sponsored, categories, stores };
+}
+
+export async function getHomeFeed(): Promise<HomeFeed> {
+  return safe(async () => {
+    const res = await api<{ data: HomeFeed }>("/home-feed");
+    return res.data;
+  }, demoHomeFeed());
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {

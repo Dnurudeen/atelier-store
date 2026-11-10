@@ -7,6 +7,7 @@ export type OrderStatus =
   | "shipped"
   | "delivered"
   | "cancelled"
+  | "returned"
   | "refunded";
 
 export type DemoOrder = {

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payout extends Model
 {
     protected $fillable = [
-        'store_id', 'sub_order_id', 'amount', 'commission', 'status', 'reference',
+        'store_id', 'sub_order_id', 'statement_id', 'amount', 'commission', 'status', 'reference',
     ];
 
     protected $casts = [
@@ -24,5 +24,10 @@ class Payout extends Model
     public function subOrder(): BelongsTo
     {
         return $this->belongsTo(SubOrder::class);
+    }
+
+    public function statement(): BelongsTo
+    {
+        return $this->belongsTo(Statement::class);
     }
 }

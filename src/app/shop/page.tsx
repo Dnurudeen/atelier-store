@@ -27,8 +27,9 @@ async function resolveProducts(searchParams: Record<string, string | string[] | 
   if (category) query.set("category", category);
   if (q) query.set("q", q);
   if (sort) query.set("sort", sort);
-  if (min) query.set("min_price", String(min));
-  if (max) query.set("max_price", String(max));
+  if (min) query.set("min", String(min));
+  if (max) query.set("max", String(max));
+  query.set("per_page", "24");
   const qs = query.toString();
   return getProducts(qs ? `?${qs}` : "");
 }

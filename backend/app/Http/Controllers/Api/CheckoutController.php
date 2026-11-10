@@ -7,7 +7,6 @@ use App\Mail\OrderPaidMail;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
-use App\Models\Payout;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
@@ -139,14 +138,6 @@ class CheckoutController extends Controller
                             'total' => $line['total'],
                         ]);
                     }
-
-                    Payout::create([
-                        'store_id' => $store->id,
-                        'sub_order_id' => $subOrder->id,
-                        'amount' => $vendorEarning,
-                        'commission' => $commission,
-                        'status' => 'pending',
-                    ]);
                 }
 
                 return $order->load('subOrders.items');
@@ -279,9 +270,6 @@ class CheckoutController extends Controller
                         ->decrement('stock', $item->quantity);
                 }
             }
-
-            Payout::whereIn('sub_order_id', $order->subOrders->pluck('id'))
-                ->update(['status' => 'available']);
 
             if ($order->user?->email) {
                 try {

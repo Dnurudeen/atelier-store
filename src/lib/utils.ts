@@ -14,6 +14,18 @@ export function formatNaira(amount: number | string) {
   }).format(Number.isFinite(value) ? value : 0);
 }
 
+export function discountPercent(
+  price?: number | string | null,
+  compareAt?: number | string | null
+) {
+  const current = Number(price);
+  const previous = Number(compareAt);
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous <= current || previous <= 0) {
+    return null;
+  }
+  return Math.round((1 - current / previous) * 100);
+}
+
 export function formatRating(rating?: number | string | null, digits = 1) {
   const value = typeof rating === "string" ? Number(rating) : Number(rating ?? 0);
   if (!Number.isFinite(value) || value <= 0) return null;

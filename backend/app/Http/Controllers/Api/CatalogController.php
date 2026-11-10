@@ -7,10 +7,18 @@ use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Store;
+use App\Services\SellerScoreService;
+use App\Services\SponsorshipService;
+use App\Support\CatalogRails;
 use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
+    public function __construct(
+        private SellerScoreService $scores,
+        private SponsorshipService $sponsorships,
+    ) {}
+
     public function categories()
     {
         $categories = Category::query()
@@ -32,23 +40,107 @@ class CatalogController extends Controller
         return response()->json(['data' => $banners]);
     }
 
+    public function home()
+    {
+        $this->sponsorships->accrueAll();
+
+        $deals = CatalogRails::uniqueImages(
+            $this->published()
+                ->whereNotNull('compare_at_price')
+                ->whereColumn('compare_at_price', '>', 'price')
+                ->where(function ($query) {
+                    $query->whereNull('sale_ends_at')->orWhere('sale_ends_at', '>', now());
+                })
+                ->latest('id')
+                ->limit(40)
+                ->get(),
+            12
+        );
+
+        $sponsored = CatalogRails::uniqueImages(
+            $this->published()
+                ->whereHas('sponsorships', fn ($query) => $query->where('status', 'active'))
+                ->latest('id')
+                ->limit(40)
+                ->get(),
+            12
+        );
+
+        $categories = Category::query()
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function (Category $category) {
+                $products = CatalogRails::uniqueImages(
+                    $this->published()
+                        ->where('category_id', $category->id)
+                        ->latest('id')
+                        ->limit(24)
+                        ->get(),
+                    10
+                );
+
+                return [
+                    'category' => $category,
+                    'products' => $products,
+                ];
+            })
+            ->filter(fn ($row) => count($row['products']) > 0)
+            ->values();
+
+        $stores = Store::query()
+            ->where('status', 'approved')
+            ->withCount(['products as products_count' => fn ($query) => $query->where('status', 'published')])
+            ->orderByDesc('rating')
+            ->limit(6)
+            ->get()
+            ->map(function (Store $store) {
+                $products = CatalogRails::uniqueImages(
+                    $this->published()
+                        ->where('store_id', $store->id)
+                        ->latest('id')
+                        ->limit(16)
+                        ->get(),
+                    8
+                );
+
+                return [
+                    'store' => $store,
+                    'products' => $products,
+                ];
+            })
+            ->filter(fn ($row) => count($row['products']) > 0)
+            ->values();
+
+        return response()->json([
+            'data' => [
+                'deals' => $deals,
+                'sponsored' => $sponsored,
+                'categories' => $categories,
+                'stores' => $stores,
+            ],
+        ]);
+    }
+
     public function products(Request $request)
     {
-        $query = Product::query()
-            ->with(['images', 'store', 'category', 'variants'])
-            ->where('status', 'published')
-            ->whereHas('store', fn ($q) => $q->where('status', 'approved'));
+        $query = $this->published();
 
         if ($request->boolean('featured')) {
             $query->where('is_featured', true);
         }
 
         if ($request->filled('category')) {
-            $query->whereHas('category', fn($q) => $q->where('slug', $request->string('category')));
+            $query->whereHas('category', fn ($q) => $q->where('slug', $request->string('category')));
+            $query->orderByDesc(
+                \App\Models\Sponsorship::selectRaw('CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END')
+                    ->whereColumn('sponsorships.product_id', 'products.id')
+                    ->where('status', 'active')
+            );
         }
 
         if ($request->filled('q')) {
-            $q = '%' . $request->string('q') . '%';
+            $q = '%'.$request->string('q').'%';
             $query->where(function ($builder) use ($q) {
                 $builder->where('name', 'like', $q)
                     ->orWhere('description', 'like', $q);
@@ -87,12 +179,12 @@ class CatalogController extends Controller
 
     public function product(string $slug)
     {
-        $product = Product::query()
-            ->with(['images', 'store', 'category', 'variants', 'tags', 'reviews.user'])
+        $product = $this->published()
+            ->with(['variants', 'tags', 'reviews' => fn ($query) => $query->latest()->with('user:id,name')])
             ->where('slug', $slug)
-            ->where('status', 'published')
-            ->whereHas('store', fn ($q) => $q->where('status', 'approved'))
             ->firstOrFail();
+
+        $this->attachScore($product->store);
 
         return response()->json(['data' => $product]);
     }
@@ -116,6 +208,8 @@ class CatalogController extends Controller
             ->withCount('products')
             ->firstOrFail();
 
+        $this->attachScore($store);
+
         return response()->json(['data' => $store]);
     }
 
@@ -123,10 +217,8 @@ class CatalogController extends Controller
     {
         $store = Store::query()->where('slug', $slug)->where('status', 'approved')->firstOrFail();
 
-        $products = Product::query()
-            ->with(['images', 'category'])
+        $products = $this->published()
             ->where('store_id', $store->id)
-            ->where('status', 'published')
             ->latest()
             ->get();
 
@@ -135,12 +227,9 @@ class CatalogController extends Controller
 
     public function search(Request $request)
     {
-        $q = '%' . $request->string('q') . '%';
+        $q = '%'.$request->string('q').'%';
 
-        $products = Product::query()
-            ->with(['images', 'store'])
-            ->where('status', 'published')
-            ->whereHas('store', fn ($builder) => $builder->where('status', 'approved'))
+        $products = $this->published()
             ->where('name', 'like', $q)
             ->limit(12)
             ->get();
@@ -157,5 +246,23 @@ class CatalogController extends Controller
                 'stores' => $stores,
             ],
         ]);
+    }
+
+    private function published()
+    {
+        return Product::query()
+            ->with(['images', 'store', 'category'])
+            ->withExists(['sponsorships as is_sponsored' => fn ($query) => $query->where('status', 'active')])
+            ->where('status', 'published')
+            ->whereHas('store', fn ($query) => $query->where('status', 'approved'));
+    }
+
+    private function attachScore(?Store $store): void
+    {
+        if (! $store) {
+            return;
+        }
+
+        $store->setAttribute('seller_score', $this->scores->forStore($store));
     }
 }

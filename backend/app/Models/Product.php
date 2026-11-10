@@ -6,17 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Product extends Model
 {
     protected $fillable = [
-        'store_id', 'category_id', 'name', 'slug', 'description', 'price',
-        'compare_at_price', 'stock', 'status', 'is_featured', 'rating', 'reviews_count',
+        'store_id', 'category_id', 'name', 'slug', 'description', 'specs', 'price',
+        'compare_at_price', 'sale_ends_at', 'stock', 'status', 'is_featured', 'rating', 'reviews_count',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'compare_at_price' => 'decimal:2',
+        'sale_ends_at' => 'datetime',
+        'specs' => 'array',
         'is_featured' => 'boolean',
         'rating' => 'decimal:2',
     ];
@@ -49,5 +52,15 @@ class Product extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function sponsorships(): HasMany
+    {
+        return $this->hasMany(Sponsorship::class);
+    }
+
+    public function activeSponsorship(): HasOne
+    {
+        return $this->hasOne(Sponsorship::class)->where('status', 'active');
     }
 }

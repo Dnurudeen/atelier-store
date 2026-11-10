@@ -135,7 +135,20 @@ class AdminApiTest extends TestCase
             'data' => ['reference' => $reference],
         ])->assertOk();
 
+        $subOrder = \App\Models\SubOrder::first();
+        $subOrder->update([
+            'status' => 'delivered',
+            'shipped_at' => now(),
+            'delivered_at' => now(),
+        ]);
+
+        $this->withHeaders($this->authHeaders($admin))
+            ->postJson('/api/v1/admin/statements/close')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+
         $payout = Payout::first();
+        $this->assertNotNull($payout);
 
         $this->withHeaders($this->authHeaders($admin))
             ->putJson('/api/v1/admin/payouts/' . $payout->id, [

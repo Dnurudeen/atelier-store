@@ -10,8 +10,11 @@ use App\Models\Order;
 use App\Models\Payout;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\Statement;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\SponsorshipService;
+use App\Services\StatementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -165,7 +168,21 @@ class AdminController extends Controller
         ]);
         $payout->update($data);
 
+        if ($payout->statement_id && $data['status'] === 'paid') {
+            Statement::where('id', $payout->statement_id)->update(['status' => 'paid']);
+        }
+
         return response()->json(['data' => $payout]);
+    }
+
+    public function closeStatements(StatementService $statements, SponsorshipService $sponsorships)
+    {
+        $sponsorships->accrueAll();
+        $created = $statements->closeOpenBalances();
+
+        return response()->json([
+            'data' => Statement::with('store')->whereIn('id', collect($created)->pluck('id'))->get(),
+        ]);
     }
 
     public function settings(Request $request)

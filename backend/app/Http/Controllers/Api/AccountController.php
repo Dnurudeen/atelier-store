@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Review;
 use App\Models\Wishlist;
 use Illuminate\Http\Request;
@@ -139,6 +141,23 @@ class AccountController extends Controller
             'comment' => ['nullable', 'string'],
         ]);
 
+        $delivered = OrderItem::query()
+            ->where('product_id', $data['product_id'])
+            ->whereHas('subOrder', function ($query) use ($request) {
+                $query->whereIn('status', ['delivered', 'completed'])
+                    ->whereHas('order', function ($order) use ($request) {
+                        $order->where('user_id', $request->user()->id)
+                            ->where('payment_status', 'paid');
+                    });
+            })
+            ->exists();
+
+        if (! $delivered) {
+            return response()->json([
+                'message' => 'You can review a piece after it has been delivered.',
+            ], 422);
+        }
+
         $review = Review::updateOrCreate(
             [
                 'user_id' => $request->user()->id,
@@ -151,11 +170,21 @@ class AccountController extends Controller
         );
 
         $product = $review->product;
-        $product->rating = round($product->reviews()->avg('rating'), 2);
+        $product->rating = round((float) $product->reviews()->avg('rating'), 2);
         $product->reviews_count = $product->reviews()->count();
         $product->save();
 
-        return response()->json(['data' => $review], 201);
+        $store = $product->store;
+        if ($store) {
+            $average = Product::query()
+                ->where('store_id', $store->id)
+                ->where('reviews_count', '>', 0)
+                ->avg('rating');
+            $store->rating = $average ? round((float) $average, 2) : 0;
+            $store->save();
+        }
+
+        return response()->json(['data' => $review->load('user:id,name')], 201);
     }
 
     public function profile(Request $request)

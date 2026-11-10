@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Payout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesMarketplaceData;
 use Tests\TestCase;
@@ -57,7 +56,7 @@ class CheckoutApiTest extends TestCase
         // vendor_earning = (subtotal + shipping) - commission
         $this->assertSame(92500.0, (float) $order->subOrders->first()->vendor_earning);
         $this->assertDatabaseCount('payments', 1);
-        $this->assertDatabaseCount('payouts', 1);
+        $this->assertDatabaseCount('payouts', 0);
     }
 
     public function test_checkout_rejects_unpublished_product(): void
@@ -157,7 +156,7 @@ class CheckoutApiTest extends TestCase
         $this->assertSame('processing', $order->status);
         $this->assertSame('paid', $order->subOrders->first()->status);
         $this->assertSame('success', Payment::where('reference', $reference)->value('status'));
-        $this->assertSame('available', Payout::first()->status);
+        $this->assertNull(\App\Models\Payout::query()->first());
 
         // Idempotent second webhook
         $this->postJson('/api/v1/webhooks/paystack', [

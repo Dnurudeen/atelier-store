@@ -111,8 +111,15 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'hello@atelierstore.studio'),
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
+
+    /*
+    | Public support address shown in branded email footers.
+    | Keep this as the customer-facing Atelier address even if MAIL_FROM_ADDRESS
+    | uses a different SMTP mailbox for delivery.
+    */
+    'support_address' => env('MAIL_SUPPORT_ADDRESS', 'hello@atelierstore.studio'),
 
 ];

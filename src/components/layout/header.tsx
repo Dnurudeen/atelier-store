@@ -1,28 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Menu, Search, ShoppingBag, User, X, LogOut } from "lucide-react";
 import { BrandLogo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
+import { api, type Category } from "@/lib/api";
 import { useCartStore } from "@/store/cart";
 import { useAuthStore } from "@/store/auth";
 import { cn } from "@/lib/utils";
 
-const nav = [
-  { href: "/shop", label: "Shop" },
-  { href: "/shop?category=fine-art", label: "Fine Art" },
-  { href: "/shop?category=fashion", label: "Fashion" },
-  { href: "/shop?category=ceramics", label: "Ceramics" },
-  { href: "/makers", label: "Makers" },
-  { href: "/become-a-vendor", label: "Sell" },
+const fallbackCategories = [
+  { slug: "fine-art", name: "Fine Art" },
+  { slug: "fashion", name: "Fashion" },
+  { slug: "ceramics", name: "Ceramics" },
+  { slug: "sculpture", name: "Sculpture" },
+  { slug: "leatherwork", name: "Leatherwork" },
+  { slug: "home-decor", name: "Home Decor" },
 ];
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [categories, setCategories] = useState<{ slug: string; name: string }[]>(fallbackCategories);
   const count = useCartStore((s) => s.count());
   const openCart = useCartStore((s) => s.open);
   const user = useAuthStore((s) => s.user);
@@ -41,17 +42,31 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    void api<{ data: Category[] }>("/categories")
+      .then((res) => {
+        const rows = (res.data || [])
+          .filter((category) => category.slug && category.name)
+          .map((category) => ({ slug: category.slug, name: category.name }));
+        if (rows.length) setCategories(rows);
+      })
+      .catch(() => setCategories(fallbackCategories));
+  }, []);
+
+  function onSearch(event: FormEvent) {
+    event.preventDefault();
+    window.location.href = `/shop?q=${encodeURIComponent(query)}`;
+  }
+
   return (
     <header
       className={cn(
         "sticky top-0 z-50 border-b transition-all duration-300",
-        scrolled
-          ? "border-border/80 bg-white/95 backdrop-blur-md shadow-sm"
-          : "border-transparent bg-white"
+        scrolled ? "border-border/80 bg-white/95 backdrop-blur-md shadow-sm" : "border-border bg-white"
       )}
     >
-      <div className="container-atelier flex h-14 items-center justify-between gap-2 md:h-16">
-        <div className="flex items-center gap-1.5 md:gap-3">
+      <div className="container-atelier flex h-14 items-center gap-2 md:h-16 md:gap-4">
+        <div className="flex items-center gap-1.5">
           <button
             className="rounded-full p-2 hover:bg-surface md:hidden"
             onClick={() => setMobileOpen((v) => !v)}
@@ -62,26 +77,32 @@ export function Header() {
           <BrandLogo variant="header" priority />
         </div>
 
-        <nav className="hidden items-center gap-7 md:flex">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-sm font-medium text-foreground/75 transition hover:text-burgundy"
+        <form onSubmit={onSearch} className="hidden min-w-0 flex-1 md:block">
+          <label className="flex items-center overflow-hidden rounded-md border border-border bg-white focus-within:border-burgundy">
+            <Search size={16} className="ml-3 shrink-0 text-muted" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search products, brands and categories"
+              className="h-10 w-full bg-transparent px-2 text-sm outline-none placeholder:text-muted"
+            />
+            <button
+              type="submit"
+              className="m-1 h-8 shrink-0 rounded-sm bg-burgundy px-4 text-sm font-semibold text-white transition hover:bg-burgundy-deep"
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+              Search
+            </button>
+          </label>
+        </form>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            className="rounded-full p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy"
-            onClick={() => setSearchOpen((v) => !v)}
+        <div className="ml-auto flex items-center gap-1.5">
+          <Link
+            href={query ? `/shop?q=${encodeURIComponent(query)}` : "/shop"}
+            className="rounded-full p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy md:hidden"
             aria-label="Search"
           >
             <Search size={18} />
-          </button>
+          </Link>
           {user ? (
             <>
               <Link
@@ -120,62 +141,49 @@ export function Header() {
               </span>
             )}
           </button>
-          <Button
-            size="sm"
-            className="ml-1 hidden lg:inline-flex"
-            onClick={() => {
-              window.location.href = "/become-a-vendor";
-            }}
-          >
+          <Button size="sm" className="ml-1 hidden lg:inline-flex" onClick={() => (window.location.href = "/become-a-vendor")}>
             Join as Vendor
           </Button>
         </div>
       </div>
 
-      {searchOpen && (
-        <div className="border-t border-border bg-white">
-          <form
-            className="container-atelier flex items-center gap-3 py-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              window.location.href = `/shop?q=${encodeURIComponent(query)}`;
-            }}
-          >
-            <Search size={18} className="text-muted" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search art, ceramics, makers..."
-              className="h-10 w-full bg-transparent text-sm outline-none placeholder:text-muted"
-            />
-            <button type="button" onClick={() => setSearchOpen(false)} className="text-sm text-muted">
-              Close
-            </button>
-          </form>
-        </div>
-      )}
+      <div className="border-t border-border bg-white lg:hidden">
+        <nav className="container-atelier flex gap-1 overflow-x-auto py-2 text-sm">
+          <Link href="/shop" className="shrink-0 rounded-md px-3 py-1.5 font-medium text-burgundy hover:bg-surface">
+            All
+          </Link>
+          {categories.map((category) => (
+            <Link
+              key={category.slug}
+              href={`/shop?category=${category.slug}`}
+              className="shrink-0 rounded-md px-3 py-1.5 text-foreground/80 hover:bg-surface hover:text-burgundy"
+            >
+              {category.name}
+            </Link>
+          ))}
+          <Link href="/makers" className="shrink-0 rounded-md px-3 py-1.5 text-foreground/80 hover:bg-surface hover:text-burgundy">
+            Makers
+          </Link>
+        </nav>
+      </div>
 
       {mobileOpen && (
         <div className="border-t border-border bg-white md:hidden">
-          <nav className="container-atelier flex flex-col gap-1 py-3">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface"
-              >
-                {item.label}
-              </Link>
-            ))}
+          <form onSubmit={onSearch} className="container-atelier py-3">
+            <label className="flex items-center gap-2 rounded-full border border-border bg-surface px-3">
+              <Search size={16} className="text-muted" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search art, ceramics, makers..."
+                className="h-10 w-full bg-transparent text-sm outline-none"
+              />
+            </label>
+          </form>
+          <nav className="container-atelier flex flex-col gap-1 pb-3">
             {user ? (
               <>
-                <Link
-                  href={accountHref}
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface"
-                >
+                <Link href={accountHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface">
                   Dashboard
                 </Link>
                 <button
@@ -190,11 +198,7 @@ export function Header() {
                 </button>
               </>
             ) : (
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface"
-              >
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface">
                 Sign in
               </Link>
             )}

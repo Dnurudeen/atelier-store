@@ -11,6 +11,7 @@
   --border: #e8e4e4;
   --surface: #faf8f8;
   --surface-warm: #f7f2f0;
+  --page-bg: #f5f3f3;
 }
 
 @theme inline {
@@ -135,6 +136,39 @@ h4,
 .mobile-rail > * {
   scroll-snap-align: start;
   flex-shrink: 0;
+}
+
+.product-rail {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+}
+
+.product-rail > * {
+  flex: 0 0 148px;
+  width: 148px;
+  scroll-snap-align: start;
+}
+
+@media (min-width: 768px) {
+  .product-rail {
+    gap: 0.65rem;
+  }
+
+  .product-rail > * {
+    flex-basis: 172px;
+    width: 172px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .product-rail > * {
+    flex-basis: 186px;
+    width: 186px;
+  }
 }
 
 @media (min-width: 768px) {

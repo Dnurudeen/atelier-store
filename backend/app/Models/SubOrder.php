@@ -11,6 +11,7 @@ class SubOrder extends Model
     protected $fillable = [
         'order_id', 'store_id', 'status', 'subtotal', 'shipping_fee',
         'total', 'commission', 'vendor_earning', 'tracking_number',
+        'shipped_at', 'delivered_at', 'returned_at', 'statement_id',
     ];
 
     protected $casts = [
@@ -19,6 +20,9 @@ class SubOrder extends Model
         'total' => 'decimal:2',
         'commission' => 'decimal:2',
         'vendor_earning' => 'decimal:2',
+        'shipped_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'returned_at' => 'datetime',
     ];
 
     public function order(): BelongsTo

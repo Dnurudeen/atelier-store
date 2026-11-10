@@ -141,13 +141,25 @@ class VendorApiTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data');
 
-        $earnings = $this->withHeaders($this->authHeaders($vendor))
+        $this->withHeaders($this->authHeaders($vendor))
             ->getJson('/api/v1/vendor/earnings')
+            ->assertOk()
+            ->assertJsonPath('data.pending', 0);
+
+        $this->withHeaders($this->authHeaders($vendor))
+            ->putJson('/api/v1/vendor/orders/' . $subOrderId, [
+                'status' => 'delivered',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'delivered');
+
+        $earnings = $this->withHeaders($this->authHeaders($vendor))
+            ->getJson('/api/v1/vendor/statements')
             ->assertOk()
             ->json('data');
 
-        $this->assertGreaterThan(0, $earnings['available']);
-        $this->assertSame('available', Payout::first()->status);
+        $this->assertGreaterThan(0, $earnings['pending']);
+        $this->assertSame(0, Payout::count());
 
         $this->withHeaders($this->authHeaders($vendor))
             ->putJson('/api/v1/vendor/settings', [

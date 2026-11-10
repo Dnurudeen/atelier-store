@@ -40,7 +40,10 @@ export function DashboardShell({
           </div>
           <nav className="flex-1 space-y-1 p-3">
             {nav.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              const active =
+                item.href === "/vendor" || item.href === "/admin"
+                  ? pathname === item.href
+                  : pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}

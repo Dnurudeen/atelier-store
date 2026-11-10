@@ -4,10 +4,15 @@ namespace Database\Seeders;
 
 use App\Models\Banner;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\ProductVariant;
+use App\Models\Review;
 use App\Models\Setting;
 use App\Models\Store;
+use App\Models\SubOrder;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -24,7 +29,7 @@ class MarketplaceSeeder extends Seeder
             ['name' => 'Platform Admin', 'password' => Hash::make('password'), 'role' => 'admin']
         );
 
-        User::updateOrCreate(
+        $customer = User::updateOrCreate(
             ['email' => 'customer@atelier.ng'],
             ['name' => 'Ada Customer', 'password' => Hash::make('password'), 'role' => 'customer', 'phone' => '08030000001']
         );
@@ -133,12 +138,14 @@ class MarketplaceSeeder extends Seeder
                 (int) ($base[1] * (0.85 + (($i % 5) * 0.07))),
                 $base[2],
                 $i % count($stores),
-                (($base[4] + $i - 1) % 12) + 1,
+                (($base[4] + $i) % 36) + 1,
             ];
         }
 
+        $seeded = [];
         foreach ($expanded as $i => [$name, $price, $catSlug, $storeIndex, $imageN]) {
             $slug = Str::slug($name) . '-' . $i;
+            $hasReviews = $i % 4 === 0;
             $product = Product::updateOrCreate(
                 ['slug' => $slug],
                 [
@@ -146,21 +153,52 @@ class MarketplaceSeeder extends Seeder
                     'category_id' => $categoryModels[$catSlug]->id,
                     'name' => $name,
                     'description' => 'Crafted with care by a verified Atelier Nigeria maker. Each piece is unique and ships with a certificate of authenticity.',
+                    'specs' => $this->specsFor($catSlug),
                     'price' => $price,
                     'compare_at_price' => $i % 4 === 0 ? (int) ($price * 1.15) : null,
                     'stock' => 3 + ($i % 10),
                     'status' => 'published',
                     'is_featured' => $i < 12,
-                    'rating' => 4.4 + ($i % 6) * 0.1,
-                    'reviews_count' => 2 + ($i % 20),
+                    'rating' => $hasReviews ? 5 : 0,
+                    'reviews_count' => $hasReviews ? 1 : 0,
                 ]
             );
+            $seeded[] = [$product, $catSlug, $hasReviews];
 
             ProductImage::updateOrCreate(
                 ['product_id' => $product->id, 'is_primary' => true],
                 ['url' => '/media/products/product-' . $imageN . '.jpg', 'sort_order' => 0]
             );
+
+            if ($imageN <= 12) {
+                ProductImage::updateOrCreate(
+                    ['product_id' => $product->id, 'sort_order' => 1],
+                    [
+                        'url' => '/media/products/gallery-' . $imageN . '.jpg',
+                        'is_primary' => false,
+                    ]
+                );
+            }
+
+            $this->syncDemoVariants($product, $catSlug);
+            if ($hasReviews) {
+                Review::updateOrCreate(
+                    ['user_id' => $customer->id, 'product_id' => $product->id],
+                    ['rating' => 5, 'comment' => 'Arrived as described. Beautiful handmade work.']
+                );
+            } else {
+                Review::where('product_id', $product->id)->where('user_id', $customer->id)->delete();
+            }
         }
+
+        foreach ($stores as $store) {
+            $rated = Product::query()->where('store_id', $store->id)->where('reviews_count', '>', 0);
+            $store->update([
+                'rating' => round((float) ($rated->avg('rating') ?: 0), 2),
+            ]);
+        }
+
+        $this->seedDeliveredOrder($customer, $seeded);
 
         Banner::updateOrCreate(
             ['title' => 'Creators and Handcrafted Excellence'],
@@ -193,6 +231,99 @@ class MarketplaceSeeder extends Seeder
                 'cta_url' => '/become-a-vendor',
                 'is_active' => true,
                 'sort_order' => 3,
+            ]
+        );
+    }
+
+    private function specsFor(string $category): array
+    {
+        return match ($category) {
+            'fine-art', 'sculpture' => ['medium' => 'Oil and pigment', 'dimensions' => '60 × 80 cm'],
+            'fashion', 'leatherwork' => ['materials' => 'Hand-finished Nigerian craft'],
+            default => ['materials' => 'Natural clay and timber', 'dimensions' => '18 cm'],
+        };
+    }
+
+    private function syncDemoVariants(Product $product, string $category): void
+    {
+        $product->variants()->delete();
+
+        $options = match ($category) {
+            'fashion' => ['color' => ['Indigo', 'Clay'], 'size' => ['S', 'M', 'L']],
+            'leatherwork' => ['color' => ['Brown', 'Black'], 'size' => ['40', '42', '44']],
+            default => [],
+        };
+
+        if ($options === []) {
+            return;
+        }
+
+        foreach ($options['color'] as $color) {
+            foreach ($options['size'] as $size) {
+                ProductVariant::create([
+                    'product_id' => $product->id,
+                    'name' => $color . ' / ' . $size,
+                    'stock' => $product->stock,
+                    'attributes' => ['color' => $color, 'size' => $size],
+                ]);
+            }
+        }
+    }
+
+    private function seedDeliveredOrder(User $customer, array $seeded): void
+    {
+        $fashion = null;
+        foreach ($seeded as [$product, $category]) {
+            if ($category === 'fashion') {
+                $fashion = $product;
+                break;
+            }
+        }
+        if (! $fashion) {
+            return;
+        }
+
+        $price = (float) $fashion->price;
+        $commission = round($price * 0.1, 2);
+        $earning = round($price - $commission, 2);
+        $paidAt = now()->subDays(3);
+
+        $order = Order::updateOrCreate(
+            ['order_number' => 'ATL-SEED-DELIVERED'],
+            [
+                'user_id' => $customer->id,
+                'status' => 'delivered',
+                'payment_status' => 'paid',
+                'subtotal' => $price,
+                'shipping_total' => 0,
+                'total' => $price,
+                'paystack_reference' => 'seed-delivered',
+            ]
+        );
+        $order->forceFill(['created_at' => $paidAt, 'updated_at' => $paidAt])->save();
+
+        $sub = SubOrder::updateOrCreate(
+            ['order_id' => $order->id, 'store_id' => $fashion->store_id],
+            [
+                'status' => 'delivered',
+                'subtotal' => $price,
+                'shipping_fee' => 0,
+                'total' => $price,
+                'commission' => $commission,
+                'vendor_earning' => $earning,
+                'tracking_number' => 'ATL-TRACK-1001',
+                'shipped_at' => $paidAt->copy()->addDay(),
+                'delivered_at' => $paidAt->copy()->addDays(2),
+            ]
+        );
+
+        OrderItem::updateOrCreate(
+            ['sub_order_id' => $sub->id, 'product_id' => $fashion->id],
+            [
+                'product_name' => $fashion->name,
+                'quantity' => 1,
+                'unit_price' => $price,
+                'total' => $price,
             ]
         );
     }

@@ -6,7 +6,10 @@ describe("media helpers", () => {
     expect(media.hero(2)).toBe("/media/hero/hero-2.jpg");
     expect(media.category("fine-art")).toBe("/media/categories/fine-art.jpg");
     expect(media.product(1)).toBe("/media/products/product-1.jpg");
-    expect(media.product(13)).toBe("/media/products/product-1.jpg");
+    expect(media.product(13)).toBe("/media/products/product-13.jpg");
+    expect(media.product(37)).toBe("/media/products/product-1.jpg");
+    expect(media.detail(1)).toBe("/media/products/gallery-1.jpg");
+    expect(media.detail(13)).toBe("/media/products/gallery-1.jpg");
     expect(media.makerBanner(9)).toBe("/media/makers/banner-1.jpg");
     expect(media.makerAvatar(8)).toBe("/media/makers/avatar-8.jpg");
   });

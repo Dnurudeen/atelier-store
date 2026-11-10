@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { SellerScore } from "@/components/products/seller-score";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { api, type Store } from "@/lib/api";
@@ -23,6 +24,7 @@ type VendorOrder = {
 
 function mapStatus(status: string): OrderStatus {
   if (status === "completed" || status === "delivered") return "delivered";
+  if (status === "returned") return "returned";
   if (status === "shipped") return "shipped";
   if (status === "cancelled") return "cancelled";
   if (status === "processing" || status === "paid") return "processing";
@@ -60,8 +62,16 @@ export default function VendorOverviewPage() {
         <StatCard label="Orders" value={String(overview?.stats.orders ?? 0)} />
         <StatCard label="Sales" value={formatNaira(overview?.stats.sales ?? 0)} />
         <StatCard label="Products" value={String(overview?.stats.products ?? 0)} />
-        <StatCard label="Earnings" value={formatNaira(overview?.stats.earnings ?? 0)} />
+        <StatCard label="Pending balance" value={formatNaira(overview?.stats.earnings ?? 0)} />
       </div>
+
+      <section className="rounded-2xl border border-border bg-surface p-6">
+        <h2 className="font-display text-xl">Seller performance</h2>
+        <p className="mt-1 text-sm text-muted">Buyers see this score on your products and store.</p>
+        <div className="mt-4 max-w-md">
+          <SellerScore score={overview?.store.seller_score} />
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-border bg-white p-6">
         <div className="flex items-center justify-between gap-3">
