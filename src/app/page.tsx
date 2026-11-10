@@ -2,18 +2,14 @@ import Link from "next/link";
 import { HeroBanner } from "@/components/home/hero-banner";
 import { ProductRail } from "@/components/home/product-rail";
 import { ValueProps } from "@/components/home/value-props";
-import { getBanners, getCategories, getHomeFeed } from "@/lib/catalog";
+import { getBanners, getHomeFeed } from "@/lib/catalog";
 
 export default async function HomePage() {
-  const [banners, feed, categories] = await Promise.all([
-    getBanners(),
-    getHomeFeed(),
-    getCategories(),
-  ]);
+  const [banners, feed] = await Promise.all([getBanners(), getHomeFeed()]);
 
   return (
     <div className="bg-[var(--page-bg)] pb-8">
-      <HeroBanner banners={banners} categories={categories} />
+      <HeroBanner banners={banners} />
       <ValueProps />
 
       <ProductRail

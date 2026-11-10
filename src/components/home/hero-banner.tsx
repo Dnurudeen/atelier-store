@@ -5,18 +5,12 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Banner, Category } from "@/lib/api";
+import type { Banner } from "@/lib/api";
 import { AppImage } from "@/components/ui/app-image";
 import { media } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
-export function HeroBanner({
-  banners,
-  categories = [],
-}: {
-  banners: Banner[];
-  categories?: Category[];
-}) {
+export function HeroBanner({ banners }: { banners: Banner[] }) {
   const activeBanners = banners.filter((b) => b.is_active);
   const [selected, setSelected] = useState(0);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
@@ -45,41 +39,9 @@ export function HeroBanner({
   return (
     <section className="bg-[var(--page-bg)] pt-3 md:pt-4">
       <div className="container-atelier">
-        <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)_220px]">
-          <aside className="hidden overflow-hidden rounded-md border border-border bg-white lg:block">
-            <p className="border-b border-border px-3 py-2.5 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
-              Categories
-            </p>
-            <nav className="py-1">
-              <Link
-                href="/shop"
-                className="flex items-center justify-between px-3 py-2 text-sm text-foreground/85 transition hover:bg-surface hover:text-burgundy"
-              >
-                All crafts
-                <ChevronRight size={14} className="text-muted" />
-              </Link>
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/shop?category=${category.slug}`}
-                  className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-foreground/85 transition hover:bg-surface hover:text-burgundy"
-                >
-                  <span className="truncate">{category.name}</span>
-                  <ChevronRight size={14} className="shrink-0 text-muted" />
-                </Link>
-              ))}
-              <Link
-                href="/makers"
-                className="flex items-center justify-between px-3 py-2 text-sm text-foreground/85 transition hover:bg-surface hover:text-burgundy"
-              >
-                Maker stores
-                <ChevronRight size={14} className="text-muted" />
-              </Link>
-            </nav>
-          </aside>
-
-          <div className="relative overflow-hidden rounded-md border border-border bg-white">
-            <div className="relative aspect-[16/9] min-h-[210px] md:aspect-[21/9] md:min-h-[280px] md:max-h-[340px]">
+        <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-stretch">
+          <div className="relative min-w-0 overflow-hidden rounded-md border border-border bg-white">
+            <div className="relative h-[220px] w-full sm:h-[260px] md:h-[320px] lg:h-[340px]">
               {activeBanners.map((banner, index) => (
                 <div
                   key={banner.id}
@@ -93,7 +55,7 @@ export function HeroBanner({
                     alt=""
                     fill
                     priority={index === 0}
-                    sizes="(max-width:1024px) 100vw, 70vw"
+                    sizes="(max-width:1024px) 100vw, 75vw"
                     frameClassName="absolute inset-0"
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/10" />
@@ -168,7 +130,7 @@ export function HeroBanner({
             </div>
           </div>
 
-          <div className="hidden flex-col gap-3 lg:flex">
+          <div className="hidden h-[340px] flex-col gap-2 lg:flex">
             {(sideBanners.length >= 2
               ? sideBanners
               : [
@@ -195,13 +157,13 @@ export function HeroBanner({
               <Link
                 key={banner.id}
                 href={banner.cta_url || "/shop"}
-                className="group relative min-h-[134px] flex-1 overflow-hidden rounded-md border border-border bg-white"
+                className="group relative min-h-0 flex-1 overflow-hidden rounded-md border border-border bg-white"
               >
                 <AppImage
                   src={banner.image}
                   alt=""
                   fill
-                  sizes="220px"
+                  sizes="240px"
                   frameClassName="absolute inset-0"
                   className="transition duration-500 group-hover:scale-105"
                 />
