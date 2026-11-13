@@ -299,4 +299,25 @@ class CatalogModelTest extends TestCase
 
         $this->assertDatabaseHas('order_items', ['variant_name' => 'Large', 'image' => '/media/products/product-1.jpg']);
     }
+
+    public function test_resaving_a_live_listing_unchanged_keeps_it_live(): void
+    {
+        [$vendor, $store] = $this->makeVendor();
+        $product = $this->makeProduct($store, null, ['specs' => ['medium' => 'Oil on canvas']]);
+        $headers = $this->authHeaders($vendor);
+
+        $this->withHeaders($headers)->putJson('/api/v1/vendor/products/'.$product->id, [
+            'name' => $product->name,
+            'description' => $product->description,
+            'category_id' => $product->category_id,
+            'specs' => [['label' => 'Medium', 'value' => 'Oil on canvas']],
+            'images' => $product->images->pluck('url')->all(),
+            'price' => 51000,
+            'status' => 'published',
+        ])->assertOk()->assertJsonPath('data.status', 'published');
+
+        $this->withHeaders($headers)->putJson('/api/v1/vendor/products/'.$product->id, [
+            'images' => ['https://cdn.example.com/new.jpg'],
+        ])->assertOk()->assertJsonPath('data.status', 'pending');
+    }
 }

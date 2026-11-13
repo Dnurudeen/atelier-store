@@ -75,6 +75,9 @@ class OrderService
                 $subOrder->cancel_reason = $extra['reason'] ?? null;
                 if ($subOrder->order?->payment_status === 'paid') {
                     $subOrder->refund_status = 'pending';
+                    foreach ($subOrder->items as $item) {
+                        Product::where('id', $item->product_id)->where('sold_count', '>=', $item->quantity)->decrement('sold_count', $item->quantity);
+                    }
                 }
                 $this->releaseStock($subOrder);
             }

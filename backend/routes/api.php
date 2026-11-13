@@ -92,6 +92,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::delete('/products/{id}', [VendorProductController::class, 'destroy'])->whereNumber('id');
             Route::post('/products/{id}/duplicate', [VendorProductController::class, 'duplicate'])->whereNumber('id');
             Route::get('/orders', [VendorController::class, 'orders']);
+            Route::get('/orders/{id}', [VendorController::class, 'order'])->whereNumber('id');
+            Route::get('/reviews', [VendorController::class, 'reviews']);
+            Route::put('/reviews/{id}/reply', [VendorController::class, 'replyReview'])->whereNumber('id');
+            Route::get('/products/export', [VendorController::class, 'exportProducts']);
             Route::put('/orders/{id}', [VendorController::class, 'updateOrder']);
             Route::get('/earnings', [VendorController::class, 'earnings']);
             Route::get('/statements', [VendorController::class, 'statements']);

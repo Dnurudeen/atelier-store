@@ -373,6 +373,9 @@ class CheckoutController extends Controller
                     $subOrder->status = OrderStatus::PAID;
                     $subOrder->save();
                 }
+                foreach ($subOrder->items as $item) {
+                    Product::where('id', $item->product_id)->increment('sold_count', $item->quantity);
+                }
             }
 
             $order->syncStatus();

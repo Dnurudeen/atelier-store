@@ -17,6 +17,9 @@ class EnsureVendor
     /** Write endpoints that remain open while a store is pending review. */
     private const ALLOWED_WHILE_PENDING = ['api/v1/vendor/settings', 'api/v1/vendor/uploads'];
 
+    /** Pending (not rejected/suspended) stores may prepare product drafts while under review. */
+    private const DRAFTS_WHILE_PENDING = ['api/v1/vendor/products', 'api/v1/vendor/products/*'];
+
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
@@ -34,7 +37,12 @@ class EnsureVendor
         }
 
         $isRead = in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true);
-        if (! $isRead && ! $store->isApproved() && ! $request->is(...self::ALLOWED_WHILE_PENDING)) {
+        $draftAllowed = $store->status === 'pending'
+            && in_array($request->method(), ['POST', 'PUT'], true)
+            && $request->is(...self::DRAFTS_WHILE_PENDING)
+            && ! $request->is('api/v1/vendor/products/inventory', 'api/v1/vendor/products/*/duplicate');
+
+        if (! $isRead && ! $store->isApproved() && ! $draftAllowed && ! $request->is(...self::ALLOWED_WHILE_PENDING)) {
             $message = match ($store->status) {
                 'suspended' => 'Your store is suspended. Contact support to restore selling.',
                 'rejected' => 'Your store application was not approved. Update your details and contact support.',

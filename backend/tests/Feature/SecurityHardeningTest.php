@@ -296,9 +296,16 @@ class SecurityHardeningTest extends TestCase
 
         $this->withHeaders($headers)->getJson('/api/v1/vendor/overview')->assertOk();
         $this->withHeaders($headers)->putJson('/api/v1/vendor/settings', ['bio' => 'Hello'])->assertOk();
-        $this->withHeaders($headers)->postJson('/api/v1/vendor/products', ['name' => 'X', 'price' => 1, 'stock' => 1])
+        // Drafts only: anything submitted is kept as a draft until the store is approved.
+        $category = $this->makeCategory();
+        $this->withHeaders($headers)->postJson('/api/v1/vendor/products', ['name' => 'Draft piece', 'price' => 1000, 'stock' => 1, 'category_id' => $category->id, 'images' => ['/x.jpg']])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'draft');
+        $this->withHeaders($headers)->postJson('/api/v1/vendor/products/inventory', ['items' => [['id' => 1, 'stock' => 3]]])
             ->assertForbidden()
             ->assertJsonPath('code', 'store_pending');
+        $this->withHeaders($headers)->postJson('/api/v1/vendor/sponsorships', ['product_id' => 1, 'budget' => 1000])
+            ->assertForbidden();
     }
 
     public function test_suspended_store_cannot_fulfil_orders(): void

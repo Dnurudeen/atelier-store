@@ -99,7 +99,8 @@ class VendorProductController extends Controller
             $product = new Product([
                 'store_id' => $store->id,
                 'slug' => $this->uniqueSlug($data['name']),
-                'status' => ($data['status'] ?? null) === 'draft' ? 'draft' : 'pending',
+                // Stores under review can only prepare drafts.
+                'status' => (($data['status'] ?? null) === 'draft' || ! $store->isApproved()) ? 'draft' : 'pending',
             ]);
             $this->fill($product, $data);
             $product->save();
@@ -122,6 +123,9 @@ class VendorProductController extends Controller
             $this->fill($product, $data);
 
             // Sellers never publish directly. "published"/"pending" both mean "submit for review".
+            if (array_key_exists('status', $data) && ! $product->store->isApproved()) {
+                $data['status'] = 'draft';
+            }
             if (array_key_exists('status', $data)) {
                 $requested = $data['status'];
                 if ($requested === 'draft') {
@@ -131,7 +135,15 @@ class VendorProductController extends Controller
                 }
             }
 
-            $imagesChanged = array_key_exists('images', $data) || array_key_exists('image_url', $data);
+            $newUrls = $this->incomingImageUrls($data);
+            $imagesChanged = $newUrls !== null && $newUrls !== $product->images()->pluck('url')->all();
+
+            // Specs saved in the legacy object format compare equal to the same rows as a list.
+            if ($product->isDirty('specs')
+                && Product::normalizeSpecs($product->getOriginal('specs')) === Product::normalizeSpecs($product->specs)) {
+                $product->specs = $product->getOriginal('specs');
+            }
+
             $contentChanged = $product->isDirty(self::MODERATED) || $imagesChanged;
             if ($product->getOriginal('status') === 'published' && $product->status === 'published' && $contentChanged) {
                 $product->status = 'pending';
@@ -334,14 +346,20 @@ class VendorProductController extends Controller
         }
     }
 
-    private function syncImages(Product $product, array $data): void
+    private function incomingImageUrls(array $data): ?array
     {
         $urls = $data['images'] ?? (! empty($data['image_url']) ? [$data['image_url']] : null);
-        if ($urls === null) {
+
+        return $urls === null ? null : array_values(array_unique(array_filter($urls)));
+    }
+
+    private function syncImages(Product $product, array $data): void
+    {
+        $urls = $this->incomingImageUrls($data);
+        if ($urls === null || $urls === $product->images()->pluck('url')->all()) {
             return;
         }
 
-        $urls = array_values(array_unique(array_filter($urls)));
         $product->images()->delete();
         foreach ($urls as $i => $url) {
             ProductImage::create([
