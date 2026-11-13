@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +21,17 @@ class Order extends Model
         'total' => 'decimal:2',
         'shipping_snapshot' => 'array',
     ];
+
+    /** Recompute the customer-facing status from the per-seller shipments. */
+    public function syncStatus(): void
+    {
+        $statuses = $this->subOrders()->pluck('status')->all();
+        $status = OrderStatus::rollUp($statuses, (string) $this->payment_status);
+        if ($status !== $this->status) {
+            $this->status = $status;
+            $this->save();
+        }
+    }
 
     public function user(): BelongsTo
     {

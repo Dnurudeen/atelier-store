@@ -10,7 +10,7 @@ class Statement extends Model
 {
     protected $fillable = [
         'store_id', 'period_start', 'period_end', 'sales', 'commission',
-        'sponsored_fees', 'net', 'status',
+        'sponsored_fees', 'adjustments', 'net', 'status',
     ];
 
     protected $casts = [

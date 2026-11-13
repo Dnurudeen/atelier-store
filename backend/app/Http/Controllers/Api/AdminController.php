@@ -38,7 +38,7 @@ class AdminController extends Controller
     public function vendors()
     {
         return response()->json([
-            'data' => Store::with('user')->latest()->get(),
+            'data' => Store::with('user')->latest()->get()->each->withPrivateDetails(),
         ]);
     }
 
@@ -47,9 +47,13 @@ class AdminController extends Controller
         $store = Store::with('user')->findOrFail($id);
         $data = $request->validate([
             'status' => ['required', 'in:pending,approved,rejected,suspended'],
+            'reason' => ['nullable', 'string', 'max:255'],
         ]);
-        $store->update($data);
-        $store = $store->fresh('user');
+        $store->update([
+            'status' => $data['status'],
+            'status_reason' => $data['status'] === 'approved' ? null : ($data['reason'] ?? null),
+        ]);
+        $store = $store->fresh('user')->withPrivateDetails();
 
         if ($store->user?->email && in_array($data['status'], ['approved', 'rejected', 'suspended'], true)) {
             try {
@@ -73,10 +77,15 @@ class AdminController extends Controller
     {
         $product = Product::findOrFail($id);
         $data = $request->validate([
-            'status' => ['required', 'in:draft,pending,published,rejected'],
+            'status' => ['sometimes', 'in:draft,pending,published,rejected'],
             'is_featured' => ['sometimes', 'boolean'],
+            'reason' => ['nullable', 'string', 'max:255'],
         ]);
-        $product->update($data);
+        if (array_key_exists('status', $data)) {
+            $product->rejection_reason = $data['status'] === 'rejected' ? ($data['reason'] ?? null) : null;
+        }
+        unset($data['reason']);
+        $product->fill($data)->save();
 
         return response()->json(['data' => $product->fresh()]);
     }
@@ -96,15 +105,22 @@ class AdminController extends Controller
     public function storeCategory(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required', 'string'],
+            'name' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'string'],
+            'image' => ['nullable', 'string', 'max:500'],
             'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
         ]);
 
+        $base = Str::slug($data['name']) ?: 'category';
+        $slug = $base;
+        $n = 2;
+        while (Category::where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$n++;
+        }
+
         $category = Category::create([
             ...$data,
-            'slug' => Str::slug($data['name']),
+            'slug' => $slug,
             'sort_order' => Category::count() + 1,
         ]);
 
@@ -121,9 +137,9 @@ class AdminController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string'],
             'subtitle' => ['nullable', 'string'],
-            'image' => ['required', 'string'],
-            'cta_label' => ['nullable', 'string'],
-            'cta_url' => ['nullable', 'string'],
+            'image' => ['required', 'string', 'max:500', 'regex:#^(https?://|/)#i'],
+            'cta_label' => ['nullable', 'string', 'max:60'],
+            'cta_url' => ['nullable', 'string', 'max:500', 'regex:#^(https?://|/)#i'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
@@ -142,9 +158,9 @@ class AdminController extends Controller
         $banner->update($request->validate([
             'title' => ['sometimes', 'string'],
             'subtitle' => ['nullable', 'string'],
-            'image' => ['sometimes', 'string'],
-            'cta_label' => ['nullable', 'string'],
-            'cta_url' => ['nullable', 'string'],
+            'image' => ['sometimes', 'string', 'max:500', 'regex:#^(https?://|/)#i'],
+            'cta_label' => ['nullable', 'string', 'max:60'],
+            'cta_url' => ['nullable', 'string', 'max:500', 'regex:#^(https?://|/)#i'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer'],
         ]));
@@ -155,7 +171,7 @@ class AdminController extends Controller
     public function payouts()
     {
         return response()->json([
-            'data' => Payout::with(['store', 'subOrder'])->latest()->get(),
+            'data' => Payout::with(['store', 'subOrder'])->latest()->get()->each(fn ($p) => $p->store?->withPrivateDetails()),
         ]);
     }
 
@@ -164,8 +180,11 @@ class AdminController extends Controller
         $payout = Payout::findOrFail($id);
         $data = $request->validate([
             'status' => ['required', 'in:pending,available,paid,failed'],
-            'reference' => ['nullable', 'string'],
+            'reference' => ['required_if:status,paid', 'nullable', 'string', 'max:120'],
         ]);
+        if ($payout->status === 'paid') {
+            return response()->json(['message' => 'This payout has already been paid.'], 422);
+        }
         $payout->update($data);
 
         if ($payout->statement_id && $data['status'] === 'paid') {

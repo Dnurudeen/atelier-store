@@ -11,12 +11,14 @@ use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureVendor;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->group(function () {
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::post('/auth/google', [AuthController::class, 'google']);
-    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+Route::prefix('v1')->middleware('throttle:api')->group(function () {
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('/auth/register', [AuthController::class, 'register']);
+        Route::post('/auth/login', [AuthController::class, 'login']);
+        Route::post('/auth/google', [AuthController::class, 'google']);
+        Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    });
 
     Route::get('/home-feed', [CatalogController::class, 'home']);
     Route::get('/categories', [CatalogController::class, 'categories']);
@@ -28,7 +30,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/stores/{slug}/products', [CatalogController::class, 'storeProducts']);
     Route::get('/search', [CatalogController::class, 'search']);
 
-    Route::post('/webhooks/paystack', [CheckoutController::class, 'webhook']);
+    Route::post('/webhooks/paystack', [CheckoutController::class, 'webhook'])->withoutMiddleware('throttle:api');
 
     Route::middleware([AuthenticateApiToken::class])->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);

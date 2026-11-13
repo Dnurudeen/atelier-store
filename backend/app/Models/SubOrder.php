@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,8 @@ class SubOrder extends Model
         'order_id', 'store_id', 'status', 'subtotal', 'shipping_fee',
         'total', 'commission', 'vendor_earning', 'tracking_number',
         'shipped_at', 'delivered_at', 'returned_at', 'statement_id',
+        'cancelled_at', 'cancel_reason', 'cancelled_by', 'refund_status',
+        'settled_via_split', 'clawback_statement_id',
     ];
 
     protected $casts = [
@@ -23,7 +26,21 @@ class SubOrder extends Model
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
         'returned_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'settled_via_split' => 'boolean',
     ];
+
+    protected $appends = ['allowed_transitions'];
+
+    /** Next statuses the seller may move this shipment to. */
+    public function getAllowedTransitionsAttribute(): array
+    {
+        if ($this->status === OrderStatus::PENDING) {
+            return [];
+        }
+
+        return array_values(array_intersect(OrderStatus::nextFor((string) $this->status), OrderStatus::VENDOR_SETTABLE));
+    }
 
     public function order(): BelongsTo
     {

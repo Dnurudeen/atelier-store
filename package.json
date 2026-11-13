@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:backend": "php backend/bin/phpunit"
+    "test:backend": "cd backend && php bin/phpunit"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",

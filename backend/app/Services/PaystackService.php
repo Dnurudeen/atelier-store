@@ -22,9 +22,16 @@ class PaystackService
         return $this->secret !== '';
     }
 
+    /** Demo payments are only allowed off-production AND when explicitly enabled. */
     public function allowDemo(): bool
     {
-        return ! app()->environment('production');
+        return ! app()->environment('production') && (bool) config('services.paystack.demo', false);
+    }
+
+    /** True when payments are being simulated (no secret key, demo enabled). */
+    public function isDemo(): bool
+    {
+        return ! $this->isConfigured() && $this->allowDemo();
     }
 
     public function initializeTransaction(array $payload): array
@@ -86,9 +93,13 @@ class PaystackService
         }
 
         $response = Http::withToken($this->secret)
-            ->get($this->base.'/transaction/verify/'.$reference);
+            ->get($this->base.'/transaction/verify/'.rawurlencode($reference));
 
-        return $response->json();
+        if (! $response->successful() && $response->status() >= 500) {
+            throw new RuntimeException('Could not reach Paystack. Please try again.');
+        }
+
+        return (array) $response->json();
     }
 
     public function createSubaccount(array $payload): array

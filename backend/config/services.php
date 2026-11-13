@@ -38,6 +38,7 @@ return [
     'paystack' => [
         'public' => env('PAYSTACK_PUBLIC_KEY'),
         'secret' => env('PAYSTACK_SECRET_KEY'),
+        'demo' => (bool) env('PAYSTACK_DEMO', false),
     ],
 
     'google' => [

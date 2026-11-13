@@ -274,7 +274,7 @@ class AuthController extends Controller
             'phone' => $user->phone,
             'avatar' => $user->avatar,
             'roles' => [$user->role],
-            'store' => $user->store,
+            'store' => $user->store?->withPrivateDetails(),
             'has_google' => (bool) $user->google_id,
             'needs_onboarding' => $user->needsOnboarding(),
         ];

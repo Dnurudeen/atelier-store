@@ -42,7 +42,7 @@ class CatalogController extends Controller
 
     public function home()
     {
-        $this->sponsorships->accrueAll();
+        // Sponsorship billing runs on the scheduler (sponsorships:accrue), never on public GETs.
 
         $deals = CatalogRails::uniqueImages(
             $this->published()
@@ -193,7 +193,7 @@ class CatalogController extends Controller
     {
         $stores = Store::query()
             ->where('status', 'approved')
-            ->withCount('products')
+            ->withCount(['products' => fn ($query) => $query->where('status', 'published')])
             ->orderByDesc('rating')
             ->get();
 
@@ -205,7 +205,7 @@ class CatalogController extends Controller
         $store = Store::query()
             ->where('slug', $slug)
             ->where('status', 'approved')
-            ->withCount('products')
+            ->withCount(['products' => fn ($query) => $query->where('status', 'published')])
             ->firstOrFail();
 
         $this->attachScore($store);

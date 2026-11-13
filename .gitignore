@@ -59,3 +59,7 @@ next-env.d.ts
 
 *.zip
 backend/backend.zip
+
+/backend/.phpunit.result.cache
+/backend/storage/app/public/*
+!/backend/storage/app/public/.gitignore

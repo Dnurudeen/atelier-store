@@ -11,7 +11,9 @@ use App\Models\Sponsorship;
 use App\Models\Statement;
 use App\Models\Store;
 use App\Models\SubOrder;
+use App\Services\OrderService;
 use App\Services\PaystackService;
+use App\Support\OrderStatus;
 use App\Services\SellerScoreService;
 use App\Services\SponsorshipService;
 use App\Services\StatementService;
@@ -25,6 +27,7 @@ class VendorController extends Controller
         private SellerScoreService $scores,
         private StatementService $statements,
         private SponsorshipService $sponsorships,
+        private OrderService $orderService,
     ) {}
 
     public function overview(Request $request)
@@ -42,7 +45,7 @@ class VendorController extends Controller
 
         return response()->json([
             'data' => [
-                'store' => $store,
+                'store' => $store->withPrivateDetails(),
                 'stats' => compact('orders', 'sales', 'products', 'earnings'),
             ],
         ]);
@@ -95,7 +98,7 @@ class VendorController extends Controller
             }
         }
 
-        return response()->json(['data' => $store->fresh()]);
+        return response()->json(['data' => $store->fresh()->withPrivateDetails()]);
     }
 
     public function products(Request $request)
@@ -147,12 +150,20 @@ class VendorController extends Controller
         $product = Product::where('store_id', $store->id)->findOrFail($id);
         $data = $this->validateProduct($request, partial: true);
 
-        if (($data['status'] ?? null) === 'published' && $product->status !== 'published') {
-            $data['status'] = 'pending';
+        // Sellers can never publish directly: "published" means "submit for review".
+        if (($data['status'] ?? null) === 'published') {
+            $data['status'] = $product->status === 'published' ? 'published' : 'pending';
         }
 
         unset($data['sizes'], $data['colors'], $data['image_url']);
-        $product->update($data);
+        $product->fill($data);
+
+        // Content changes on a live listing go back to moderation; price/stock edits stay live.
+        $moderated = ['name', 'description', 'category_id', 'specs'];
+        if ($product->status === 'published' && $product->isDirty($moderated)) {
+            $product->status = 'pending';
+        }
+        $product->save();
 
         if ($request->exists('sizes') || $request->exists('colors')) {
             $product->variants()->delete();
@@ -179,33 +190,17 @@ class VendorController extends Controller
         $subOrder = SubOrder::where('store_id', $store->id)->findOrFail($id);
 
         $data = $request->validate([
-            'status' => ['required', 'in:processing,shipped,delivered,completed,cancelled,returned'],
+            'status' => ['required', 'in:'.implode(',', [...OrderStatus::VENDOR_SETTABLE, 'completed'])],
             'tracking_number' => ['nullable', 'string', 'max:120'],
+            'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $status = $data['status'] === 'completed' ? 'delivered' : $data['status'];
-        $updates = ['status' => $status];
+        $subOrder = $this->orderService->transition($subOrder, $data['status'], 'vendor', [
+            'tracking_number' => $data['tracking_number'] ?? null,
+            'reason' => $data['reason'] ?? null,
+        ]);
 
-        if (array_key_exists('tracking_number', $data)) {
-            $updates['tracking_number'] = $data['tracking_number'];
-        }
-
-        if ($status === 'shipped') {
-            $updates['shipped_at'] = $subOrder->shipped_at ?? now();
-        }
-
-        if ($status === 'delivered') {
-            $updates['shipped_at'] = $subOrder->shipped_at ?? now();
-            $updates['delivered_at'] = $subOrder->delivered_at ?? now();
-        }
-
-        if ($status === 'returned') {
-            $updates['returned_at'] = $subOrder->returned_at ?? now();
-        }
-
-        $subOrder->update($updates);
-
-        return response()->json(['data' => $subOrder->fresh('items')]);
+        return response()->json(['data' => $subOrder->fresh(['items', 'order'])]);
     }
 
     public function earnings(Request $request)
@@ -297,9 +292,16 @@ class VendorController extends Controller
             'account_name' => ['nullable', 'string'],
         ]);
 
-        $store->update($data);
+        $bankChanged = collect(['bank_name', 'account_number', 'account_name'])
+            ->contains(fn ($key) => array_key_exists($key, $data) && $data[$key] !== $store->{$key});
+        $store->fill($data);
+        if ($bankChanged) {
+            // New payout account: the old Paystack split account must not receive funds.
+            $store->paystack_subaccount_code = null;
+        }
+        $store->save();
 
-        return response()->json(['data' => $store->fresh()]);
+        return response()->json(['data' => $store->fresh()->withPrivateDetails()]);
     }
 
     private function statementPayload(Store $store): array

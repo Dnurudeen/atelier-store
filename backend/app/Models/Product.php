@@ -12,7 +12,7 @@ class Product extends Model
 {
     protected $fillable = [
         'store_id', 'category_id', 'name', 'slug', 'description', 'specs', 'price',
-        'compare_at_price', 'sale_ends_at', 'stock', 'status', 'is_featured', 'rating', 'reviews_count',
+        'compare_at_price', 'sale_ends_at', 'stock', 'status', 'rejection_reason', 'is_featured', 'rating', 'reviews_count',
     ];
 
     protected $casts = [
