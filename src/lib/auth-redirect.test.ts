@@ -43,3 +43,15 @@ describe("postAuthPath", () => {
     expect(postAuthPath(user({}), { next: "/checkout" })).toBe("/checkout");
   });
 });
+
+describe("safe redirects", () => {
+  it("blocks open redirects through ?next", () => {
+    for (const bad of ["https://evil.com", "//evil.com", "/" + String.fromCharCode(92) + "evil.com", "javascript:alert(1)", "evil.com", "/login?next=/x"]) {
+      expect(postAuthPath(user({}), { next: bad })).toBe("/account");
+    }
+  });
+
+  it("keeps in-app paths with query strings", () => {
+    expect(postAuthPath(user({}), { next: "/shop?q=bag" })).toBe("/shop?q=bag");
+  });
+});

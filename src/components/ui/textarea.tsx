@@ -13,12 +13,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <label className="block space-y-1.5">
         {label && (
-          <span className="text-sm font-medium text-foreground/80">{label}</span>
+          <span className="text-[13px] font-medium text-foreground/80">{label}{props.required && <span className="ml-0.5 text-crimson">*</span>}</span>
         )}
         <textarea
           ref={ref}
           className={cn(
-            "min-h-28 w-full rounded-xl border border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-burgundy focus:ring-2 focus:ring-burgundy/15",
+            "min-h-28 w-full rounded-md border border-border bg-white px-3.5 py-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-burgundy focus:ring-2 focus:ring-burgundy/15",
             error && "border-crimson focus:border-crimson focus:ring-crimson/15",
             className
           )}

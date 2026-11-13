@@ -32,7 +32,7 @@ class AuthenticateApiTokenTest extends TestCase
         $middleware = new AuthenticateApiToken;
 
         $request = Request::create('/api/v1/auth/me', 'GET');
-        $request->headers->set('Authorization', 'Bearer '.$user->api_token);
+        $request->headers->set('Authorization', 'Bearer '.$user->createToken('test'));
 
         $response = $middleware->handle($request, function (Request $req) use ($user) {
             $this->assertSame($user->id, $req->user()->id);

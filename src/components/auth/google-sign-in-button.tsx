@@ -91,8 +91,8 @@ export function GoogleSignInButton({
         theme: "outline",
         size: "large",
         text: label,
-        shape: "pill",
-        width: 320,
+        shape: "rectangular",
+        width: Math.min(376, Math.max(240, buttonRef.current.offsetWidth || 320)),
       });
       setReady(true);
     }
@@ -124,23 +124,29 @@ export function GoogleSignInButton({
   }, [label, loginWithGoogle, role]);
 
   if (!GOOGLE_CLIENT_ID) {
-    return (
-      <p className="rounded-xl border border-dashed border-border bg-surface px-4 py-3 text-center text-xs text-muted">
-        Google sign-in will appear here once <code className="text-foreground">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> is
-        set.
-      </p>
-    );
+    // Only developers need to know why the button is missing.
+    if (process.env.NODE_ENV !== "production") {
+      return (
+        <p className="rounded-md border border-dashed border-border bg-surface px-4 py-3 text-center text-xs text-muted">
+          Google sign-in appears once <code className="text-foreground">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> is set.
+        </p>
+      );
+    }
+    return null;
   }
 
   return (
     <div className="space-y-2">
-      <div ref={buttonRef} className="flex min-h-11 justify-center" />
+      <div ref={buttonRef} className="flex min-h-11 w-full justify-center" />
       {!ready && <p className="text-center text-xs text-muted">Loading Google…</p>}
     </div>
   );
 }
 
-export function AuthDivider({ text = "or continue with email" }: { text?: string }) {
+export const googleEnabled = Boolean(GOOGLE_CLIENT_ID);
+
+export function AuthDivider({ text = "or" }: { text?: string }) {
+  if (!GOOGLE_CLIENT_ID && process.env.NODE_ENV === "production") return null;
   return (
     <div className="relative my-6">
       <div className="absolute inset-0 flex items-center">

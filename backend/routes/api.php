@@ -18,6 +18,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/auth/google', [AuthController::class, 'google']);
         Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+        Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
     });
 
     Route::get('/home-feed', [CatalogController::class, 'home']);
@@ -36,6 +37,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/complete-onboarding', [AuthController::class, 'completeOnboarding']);
+        Route::post('/auth/logout-all', [AuthController::class, 'logoutAll']);
+        Route::get('/auth/sessions', [AuthController::class, 'sessions']);
+        Route::put('/auth/password', [AuthController::class, 'changePassword']);
+        Route::delete('/auth/account', [AuthController::class, 'deleteAccount']);
+        Route::post('/auth/email/resend', [AuthController::class, 'resendVerification'])->middleware('throttle:auth');
 
         Route::post('/checkout', [CheckoutController::class, 'checkout']);
         Route::get('/payments/verify/{reference}', [CheckoutController::class, 'verify']);

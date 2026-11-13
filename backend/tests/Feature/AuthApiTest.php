@@ -100,16 +100,26 @@ class AuthApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.email', $user->email);
 
-        $this->withHeaders($this->authHeaders($user))
+        $token = $user->createToken('test');
+        $other = $user->createToken('phone');
+        $headers = ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'];
+
+        $this->withHeaders($headers)
             ->postJson('/api/v1/auth/logout')
             ->assertOk()
             ->assertJsonPath('message', 'Logged out');
 
-        $this->assertDatabaseHas('users', ['id' => $user->id, 'api_token' => null]);
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => (int) explode('|', $token)[0]]);
+        $this->app['auth']->forgetGuards();
 
-        $this->withHeaders($this->authHeaders($user))
+        $this->withHeaders($headers)
             ->getJson('/api/v1/auth/me')
             ->assertUnauthorized();
+
+        // Logging out one device leaves the others signed in.
+        $this->withHeaders(['Authorization' => 'Bearer '.$other, 'Accept' => 'application/json'])
+            ->getJson('/api/v1/auth/me')
+            ->assertOk();
     }
 
     public function test_google_sign_in_creates_user_and_requires_onboarding(): void

@@ -65,7 +65,7 @@ describe("useAuthStore", () => {
     expect(useAuthStore.getState().user?.roles).toContain("vendor");
   });
 
-  it("fetchMe refreshes the user and clears on failure", async () => {
+  it("fetchMe refreshes the user, keeps it on network errors and clears on 401", async () => {
     useAuthStore.getState().setSession(
       { id: 1, name: "Ada", email: "ada@atelier.test", roles: ["customer"] },
       "tok_me"
@@ -77,7 +77,11 @@ describe("useAuthStore", () => {
     await useAuthStore.getState().fetchMe();
     expect(useAuthStore.getState().user?.name).toBe("Ada Updated");
 
-    vi.mocked(api).mockRejectedValueOnce({ message: "Unauthenticated." });
+    vi.mocked(api).mockRejectedValueOnce({ message: "offline", status: 0 });
+    await useAuthStore.getState().fetchMe();
+    expect(useAuthStore.getState().user?.name).toBe("Ada Updated");
+
+    vi.mocked(api).mockRejectedValueOnce({ message: "Unauthenticated.", status: 401 });
     await useAuthStore.getState().fetchMe();
     expect(useAuthStore.getState().user).toBeNull();
     expect(getToken()).toBeNull();

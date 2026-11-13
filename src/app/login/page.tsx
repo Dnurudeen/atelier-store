@@ -2,108 +2,178 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
+import { ArrowLeft, Mail } from "lucide-react";
+import { AuthShell, FormAlert } from "@/components/auth/auth-shell";
 import { AuthDivider, GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PageFade } from "@/components/motion/page-fade";
 import { PageLoader } from "@/components/ui/page-loader";
-import { postAuthPath } from "@/lib/auth-redirect";
+import { errorMessage, fieldErrors } from "@/lib/api";
+import { postAuthPath, safeNext } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const next = safeNext(params.get("next"));
   const login = useAuthStore((s) => s.login);
   const loading = useAuthStore((s) => s.loading);
-  const [email, setEmail] = useState("");
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const signedIn = useAuthStore((s) => Boolean(s.token && s.user));
+
+  const [step, setStep] = useState<"email" | "password">("email");
+  const [email, setEmail] = useState(params.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Already signed in? Skip the form.
+  useEffect(() => {
+    if (hydrated && signedIn) {
+      router.replace(postAuthPath(useAuthStore.getState().user, { next }));
+    }
+  }, [hydrated, signedIn, router, next]);
+
+  useEffect(() => {
+    if (step === "password") passwordRef.current?.focus();
+  }, [step]);
 
   function goAfterAuth() {
-    const user = useAuthStore.getState().user;
-    router.push(postAuthPath(user, { next: params.get("next") }));
+    router.replace(postAuthPath(useAuthStore.getState().user, { next }));
   }
 
-  async function onSubmit(e: FormEvent) {
+  function onEmail(e: FormEvent) {
     e.preventDefault();
     setError("");
+    if (!EMAIL_RE.test(email.trim())) {
+      setErrors({ email: "Enter a valid email address." });
+      return;
+    }
+    setErrors({});
+    setStep("password");
+  }
+
+  async function onPassword(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    setErrors({});
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       goAfterAuth();
     } catch (err) {
-      if (process.env.NEXT_PUBLIC_USE_DEMO === "true") {
-        const role =
-          email.includes("admin") ? "admin" : email.includes("vendor") ? "vendor" : "customer";
-        useAuthStore.getState().setSession(
-          {
-            id: 1,
-            name: role === "admin" ? "Platform Admin" : role === "vendor" ? "Demo Vendor" : "Ada Customer",
-            email,
-            roles: [role],
-            needs_onboarding: false,
-          },
-          "demo-token"
-        );
-        router.push(role === "admin" ? "/admin" : role === "vendor" ? "/vendor" : "/account");
-        return;
-      }
-      setError((err as { message?: string })?.message || "Unable to sign in");
+      const fields = fieldErrors(err);
+      if (fields.email) setError(fields.email);
+      else setError(errorMessage(err, "Unable to sign in. Please try again."));
+      setPassword("");
     }
   }
 
+  const registerHref = `/register${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+
   return (
-    <PageFade className="container-atelier flex min-h-[70vh] items-center justify-center py-10 md:py-16">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-sm md:rounded-3xl md:p-8">
-        <p className="text-[10px] font-medium tracking-[0.2em] text-crimson uppercase md:text-xs">Welcome back</p>
-        <h1 className="mt-1.5 font-display text-2xl md:mt-2 md:text-3xl">Sign in to Atelier</h1>
-        <p className="mt-1.5 text-[13px] text-muted md:mt-2 md:text-sm">Access your orders, wishlist, or seller dashboard.</p>
-
-        <div className="mt-6 md:mt-8">
-          <GoogleSignInButton
-            label="signin_with"
-            onSuccess={goAfterAuth}
-            onError={(message) => setError(message)}
-          />
+    <AuthShell
+      title="Welcome to Atelier"
+      subtitle={
+        step === "email"
+          ? "Type your email address to sign in to your Atelier account."
+          : "Enter your password to continue."
+      }
+      footer={
+        <>
+          New to Atelier?{" "}
+          <Link href={registerHref} className="font-semibold text-burgundy hover:underline">
+            Create an account
+          </Link>
+        </>
+      }
+    >
+      {params.get("reason") === "expired" && (
+        <div className="mb-4">
+          <FormAlert tone="info">Your session expired. Please sign in again.</FormAlert>
         </div>
+      )}
 
-        <AuthDivider />
-
-        <form onSubmit={onSubmit} className="space-y-4">
+      {step === "email" ? (
+        <form onSubmit={onEmail} className="space-y-4" noValidate>
           <Input
-            label="Email"
+            label="Email address"
             type="email"
+            autoComplete="email"
+            inputMode="email"
+            autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={errors.email}
             required
           />
-          <Input
+          <Button type="submit" size="lg" className="w-full">
+            Continue
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={onPassword} className="space-y-4">
+          <button
+            type="button"
+            onClick={() => {
+              setStep("email");
+              setError("");
+            }}
+            className="flex w-full items-center gap-2 rounded-md border border-border bg-surface px-3 py-2.5 text-left text-sm"
+          >
+            <Mail className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+            <span className="min-w-0 flex-1 truncate">{email}</span>
+            <span className="text-xs font-semibold text-burgundy">Edit</span>
+          </button>
+          <PasswordInput
+            ref={passwordRef}
             label="Password"
-            type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {error && <p className="text-sm text-crimson">{error}</p>}
-          <Button type="submit" className="w-full" loading={loading}>
+          {error && <FormAlert>{error}</FormAlert>}
+          <Button type="submit" size="lg" className="w-full" loading={loading}>
             Sign in
           </Button>
+          <div className="flex items-center justify-between text-[13px]">
+            <button
+              type="button"
+              onClick={() => setStep("email")}
+              className="inline-flex items-center gap-1 text-muted hover:text-burgundy"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Back
+            </button>
+            <Link
+              href={`/forgot-password?email=${encodeURIComponent(email)}`}
+              className="font-semibold text-burgundy hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </form>
+      )}
 
-        <p className="mt-4 text-center text-sm text-muted">
-          <Link href="/forgot-password" className="font-medium text-burgundy hover:underline">
-            Forgot password?
-          </Link>
-        </p>
+      <AuthDivider />
+      <GoogleSignInButton label="continue_with" onSuccess={goAfterAuth} onError={setError} />
 
-        <p className="mt-4 text-center text-sm text-muted">
-          New here?{" "}
-          <Link href="/register" className="font-medium text-burgundy hover:underline">
-            Create an account
-          </Link>
-        </p>
-      </div>
-    </PageFade>
+      <p className="mt-5 text-center text-[11px] leading-relaxed text-muted">
+        By continuing you agree to Atelier&apos;s{" "}
+        <Link href="/terms" className="underline hover:text-burgundy">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline hover:text-burgundy">
+          Privacy Policy
+        </Link>
+        .
+      </p>
+    </AuthShell>
   );
 }
 

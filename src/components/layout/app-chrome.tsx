@@ -7,7 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { CartDrawer } from "@/components/layout/cart-drawer";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 
-const CHROMELESS_PREFIXES = ["/vendor", "/admin", "/account", "/login", "/register", "/onboarding", "/forgot-password"];
+const CHROMELESS_PREFIXES = ["/vendor", "/admin", "/account", "/login", "/register", "/onboarding", "/forgot-password", "/reset-password", "/verify-email"];
 
 function isChromeless(pathname: string) {
   return CHROMELESS_PREFIXES.some(

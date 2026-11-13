@@ -2,19 +2,47 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1
 
 export type ApiError = {
   message: string;
+  status?: number;
+  code?: string;
   errors?: Record<string, string[]>;
 };
 
-async function parseResponse<T>(res: Response): Promise<T> {
+/** Fired when a signed-in request comes back 401 (token expired or revoked). */
+export const UNAUTHORIZED_EVENT = "atelier:unauthorized";
+
+async function parseResponse<T>(res: Response, sentToken: boolean): Promise<T> {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401 && sentToken && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+    }
     const error: ApiError = {
-      message: data.message || "Something went wrong",
+      message:
+        res.status === 429
+          ? data.message || "Too many attempts. Please wait a minute and try again."
+          : data.message || "Something went wrong",
+      status: res.status,
+      code: data.code,
       errors: data.errors,
     };
     throw error;
   }
   return data as T;
+}
+
+/** Human message from anything thrown by `api()`. */
+export function errorMessage(err: unknown, fallback = "Something went wrong"): string {
+  const e = err as Partial<ApiError> | undefined;
+  return (e && typeof e.message === "string" && e.message) || fallback;
+}
+
+/** First validation message per field, e.g. { email: "The email has already been taken." }. */
+export function fieldErrors(err: unknown): Record<string, string> {
+  const errors = (err as Partial<ApiError> | undefined)?.errors;
+  if (!errors) return {};
+  return Object.fromEntries(
+    Object.entries(errors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : String(messages)])
+  );
 }
 
 export function getToken() {
@@ -53,14 +81,20 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body = JSON.stringify(options.body);
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method: options.method || "GET",
-    headers,
-    body,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: options.method || "GET",
+      headers,
+      body,
+      cache: "no-store",
+    });
+  } catch {
+    const error: ApiError = { message: "We couldn't reach Atelier. Check your connection and try again.", status: 0 };
+    throw error;
+  }
 
-  return parseResponse<T>(res);
+  return parseResponse<T>(res, Boolean(token));
 }
 
 export const apiPublic = {
@@ -101,7 +135,12 @@ export type Store = {
   products_count?: number;
   seller_score?: SellerScore | null;
   status: "pending" | "approved" | "rejected" | "suspended";
+  status_reason?: string | null;
   shipping_fee?: number | string;
+  bank_name?: string | null;
+  account_number?: string | null;
+  account_number_masked?: string | null;
+  account_name?: string | null;
   user?: User;
 };
 
@@ -178,8 +217,12 @@ export type User = {
   avatar?: string | null;
   roles?: string[];
   store?: Store | null;
+  status?: "active" | "suspended" | "deleted";
   has_google?: boolean;
+  email_verified?: boolean;
+  newsletter_opt_in?: boolean;
   needs_onboarding?: boolean;
+  created_at?: string;
 };
 
 export type Address = {

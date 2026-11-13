@@ -1,133 +1,96 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { api } from "@/lib/api";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { MailCheck } from "lucide-react";
+import { AuthShell, FormAlert } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PageFade } from "@/components/motion/page-fade";
+import { PageLoader } from "@/components/ui/page-loader";
+import { api, errorMessage, fieldErrors } from "@/lib/api";
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [step, setStep] = useState<"request" | "reset" | "done">("request");
-  const [message, setMessage] = useState("");
+function ForgotPasswordForm() {
+  const params = useSearchParams();
+  const [email, setEmail] = useState(params.get("email") ?? "");
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function requestReset(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const res = await api<{ message: string }>("/auth/forgot-password", {
-        method: "POST",
-        body: { email },
-        token: null,
-      });
-      setMessage(res.message);
-      setStep("reset");
+      await api("/auth/forgot-password", { method: "POST", body: { email: email.trim() }, token: null });
+      setSent(true);
     } catch (err) {
-      setError((err as { message?: string })?.message || "Unable to send reset email");
+      setError(fieldErrors(err).email || errorMessage(err, "Unable to send the reset email."));
     } finally {
       setLoading(false);
     }
   }
 
-  async function resetPassword(e: FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-    try {
-      await api("/auth/reset-password", {
-        method: "POST",
-        body: {
-          email,
-          token,
-          password,
-          password_confirmation: confirm,
-        },
-        token: null,
-      });
-      setStep("done");
-    } catch (err) {
-      setError((err as { message?: string })?.message || "Unable to reset password");
-    } finally {
-      setLoading(false);
-    }
+  if (sent) {
+    return (
+      <AuthShell title="Check your inbox" subtitle={<>If an account exists for <strong>{email}</strong>, we&apos;ve sent a link to reset your password. It expires in 60 minutes.</>}>
+        <div className="flex flex-col items-center gap-5">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-warm text-burgundy">
+            <MailCheck className="h-7 w-7" aria-hidden />
+          </span>
+          <p className="text-center text-[13px] text-muted">
+            Didn&apos;t get it? Check your spam folder, or{" "}
+            <button type="button" className="font-semibold text-burgundy hover:underline" onClick={() => setSent(false)}>
+              try again
+            </button>
+            .
+          </p>
+          <Link href="/login" className="w-full">
+            <Button variant="outline" className="w-full">
+              Back to sign in
+            </Button>
+          </Link>
+        </div>
+      </AuthShell>
+    );
   }
 
   return (
-    <PageFade className="container-atelier flex min-h-[70vh] items-center justify-center py-16">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-white p-8 shadow-sm">
-        <p className="text-xs font-medium tracking-[0.2em] text-crimson uppercase">Account recovery</p>
-        <h1 className="mt-2 font-display text-3xl">Reset password</h1>
-
-        {step === "request" && (
-          <form onSubmit={requestReset} className="mt-8 space-y-4">
-            <p className="text-sm text-muted">Enter your email and we will send a reset token.</p>
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            {error && <p className="text-sm text-crimson">{error}</p>}
-            <Button type="submit" className="w-full" loading={loading}>
-              Send reset token
-            </Button>
-          </form>
-        )}
-
-        {step === "reset" && (
-          <form onSubmit={resetPassword} className="mt-8 space-y-4">
-            {message && <p className="text-sm text-muted">{message}</p>}
-            <p className="text-sm text-muted">
-              Check your inbox (or local mail log) for the token, then choose a new password.
-            </p>
-            <Input label="Reset token" value={token} onChange={(e) => setToken(e.target.value)} required />
-            <Input
-              label="New password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <Input
-              label="Confirm password"
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-            />
-            {error && <p className="text-sm text-crimson">{error}</p>}
-            <Button type="submit" className="w-full" loading={loading}>
-              Update password
-            </Button>
-          </form>
-        )}
-
-        {step === "done" && (
-          <div className="mt-8 space-y-4 text-center">
-            <p className="text-sm text-muted">Password updated. You can sign in now.</p>
-            <Button onClick={() => (window.location.href = "/login")}>Sign in</Button>
-          </div>
-        )}
-
-        <p className="mt-6 text-center text-sm text-muted">
-          <Link href="/login" className="font-medium text-burgundy hover:underline">
-            Back to sign in
+    <AuthShell
+      title="Forgot your password?"
+      subtitle="Enter the email you use for Atelier and we'll send you a secure link to choose a new one."
+      footer={
+        <>
+          Remembered it?{" "}
+          <Link href="/login" className="font-semibold text-burgundy hover:underline">
+            Sign in
           </Link>
-        </p>
-      </div>
-    </PageFade>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
+        <Input
+          label="Email address"
+          type="email"
+          autoComplete="email"
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        {error && <FormAlert>{error}</FormAlert>}
+        <Button type="submit" size="lg" className="w-full" loading={loading}>
+          Send reset link
+        </Button>
+      </form>
+    </AuthShell>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<PageLoader label="Loading" />}>
+      <ForgotPasswordForm />
+    </Suspense>
   );
 }

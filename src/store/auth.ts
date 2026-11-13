@@ -19,7 +19,11 @@ type AuthState = {
     password: string;
     password_confirmation: string;
     role?: "customer" | "vendor";
+    phone?: string;
+    store_name?: string;
+    newsletter_opt_in?: boolean;
   }) => Promise<void>;
+  setUser: (user: User) => void;
   loginWithGoogle: (idToken: string, role?: "customer" | "vendor") => Promise<void>;
   completeOnboarding: (payload: {
     name?: string;
@@ -46,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
         setToken(null);
         set({ user: null, token: null });
       },
+      setUser: (user) => set({ user }),
       login: async (email, password) => {
         set({ loading: true });
         try {
@@ -107,8 +112,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const res = await api<{ data: User }>("/auth/me");
           set({ user: res.data });
-        } catch {
-          get().clear();
+        } catch (err) {
+          // Only drop the session when the server rejected it, not on a network blip.
+          const status = (err as { status?: number })?.status;
+          if (status === 401 || status === 403) get().clear();
         }
       },
       logout: async () => {

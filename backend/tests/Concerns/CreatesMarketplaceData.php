@@ -23,7 +23,6 @@ trait CreatesMarketplaceData
             'email' => 'user_' . Str::random(8) . '@atelier.test',
             'password' => 'password',
             'role' => 'customer',
-            'api_token' => hash('sha256', Str::random(40)),
             'onboarding_completed_at' => now(),
         ], $overrides));
     }
@@ -161,7 +160,7 @@ trait CreatesMarketplaceData
     protected function authHeaders(User $user): array
     {
         return [
-            'Authorization' => 'Bearer ' . $user->api_token,
+            'Authorization' => 'Bearer ' . $user->createToken('test'),
             'Accept' => 'application/json',
         ];
     }
