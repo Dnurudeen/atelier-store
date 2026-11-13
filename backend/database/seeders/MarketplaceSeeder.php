@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Banner;
+use App\Models\Brand;
+use App\Models\Coupon;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -23,16 +25,18 @@ class MarketplaceSeeder extends Seeder
     public function run(): void
     {
         Setting::updateOrCreate(['key' => 'commission_rate'], ['value' => '10']);
+        Setting::updateOrCreate(['key' => 'support_email'], ['value' => 'hello@atelierstore.studio']);
 
         User::updateOrCreate(
             ['email' => 'admin@atelier.ng'],
             ['name' => 'Platform Admin', 'password' => Hash::make('password'), 'role' => 'admin']
-        );
+        )->forceFill(['email_verified_at' => now()])->save();
 
         $customer = User::updateOrCreate(
             ['email' => 'customer@atelier.ng'],
             ['name' => 'Ada Customer', 'password' => Hash::make('password'), 'role' => 'customer', 'phone' => '08030000001']
         );
+        $customer->forceFill(['email_verified_at' => now()])->save();
 
         $categories = [
             ['Fine Art', 'fine-art'],
@@ -54,6 +58,31 @@ class MarketplaceSeeder extends Seeder
                     'sort_order' => $i + 1,
                 ]
             );
+        }
+
+        $subcategories = [
+            'fine-art' => [['Paintings', 'paintings'], ['Prints & Photography', 'prints-photography']],
+            'fashion' => [['Dresses & Kaftans', 'dresses-kaftans'], ['Shirts & Tops', 'shirts-tops']],
+            'ceramics' => [['Vases & Vessels', 'vases-vessels'], ['Tableware', 'tableware']],
+            'sculpture' => [['Wood Carvings', 'wood-carvings'], ['Bronze & Metal', 'bronze-metal']],
+            'leatherwork' => [['Bags', 'leather-bags'], ['Shoes & Sandals', 'shoes-sandals']],
+            'home-decor' => [['Furniture', 'furniture'], ['Textiles & Throws', 'textiles-throws']],
+        ];
+        $leaves = [];
+        foreach ($subcategories as $parentSlug => $children) {
+            foreach ($children as $j => [$name, $slug]) {
+                $leaves[$parentSlug][] = Category::updateOrCreate(
+                    ['slug' => $slug],
+                    [
+                        'name' => $name,
+                        'parent_id' => $categoryModels[$parentSlug]->id,
+                        'image' => "/media/categories/{$parentSlug}.jpg",
+                        'description' => "$name handmade in Nigeria",
+                        'sort_order' => $j + 1,
+                        'is_active' => true,
+                    ]
+                );
+            }
         }
 
         $vendors = [
@@ -146,19 +175,31 @@ class MarketplaceSeeder extends Seeder
         foreach ($expanded as $i => [$name, $price, $catSlug, $storeIndex, $imageN]) {
             $slug = Str::slug($name) . '-' . $i;
             $hasReviews = $i % 4 === 0;
+            $store = $stores[$storeIndex % count($stores)];
+            $onSale = $i % 4 === 0 || $i % 7 === 0;
             $product = Product::updateOrCreate(
                 ['slug' => $slug],
                 [
-                    'store_id' => $stores[$storeIndex % count($stores)]->id,
-                    'category_id' => $categoryModels[$catSlug]->id,
+                    'store_id' => $store->id,
+                    'category_id' => $leaves[$catSlug][$i % 2]->id,
+                    'brand_id' => Brand::resolve($store->name)->id,
                     'name' => $name,
-                    'description' => 'Crafted with care by a verified Atelier Nigeria maker. Each piece is unique and ships with a certificate of authenticity.',
+                    'sku' => strtoupper(Str::substr(Str::slug($store->name, ''), 0, 4)).'-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                    'condition' => 'new',
+                    'description' => "Crafted with care by {$store->name}, a verified Atelier Nigeria maker in {$store->location}.\n\nEvery piece is made by hand, so small variations in colour and texture are part of its character. It ships carefully packed with a certificate of authenticity.",
+                    'key_features' => $this->featuresFor($catSlug),
+                    'whats_in_box' => "1 × {$name}\n1 × Certificate of authenticity",
+                    'warranty' => '7-day return for items that arrive damaged',
                     'specs' => $this->specsFor($catSlug),
                     'price' => $price,
-                    'compare_at_price' => $i % 4 === 0 ? (int) ($price * 1.15) : null,
+                    'compare_at_price' => $onSale ? (int) ($price * ($i % 7 === 0 ? 1.4 : 1.15)) : null,
+                    // A handful of deals end soon so the home page shows a live Flash Sale countdown.
+                    'sale_ends_at' => $onSale && $i % 3 === 0 ? now()->addDays(2 + ($i % 4))->setTime(23, 59) : null,
                     'stock' => 3 + ($i % 10),
+                    'weight_kg' => in_array($catSlug, ['fashion', 'leatherwork'], true) ? 0.8 : 3.5,
                     'status' => 'published',
                     'is_featured' => $i < 12,
+                    'sold_count' => ($i * 7) % 40,
                     'rating' => $hasReviews ? 5 : 0,
                     'reviews_count' => $hasReviews ? 1 : 0,
                 ]
@@ -223,6 +264,26 @@ class MarketplaceSeeder extends Seeder
             ]
         );
         Banner::updateOrCreate(
+            ['title' => 'Handmade Gifts They Will Keep'],
+            ['subtitle' => 'Under ₦50,000', 'image' => '/media/makers/banner-2.jpg', 'cta_label' => 'Shop gifts', 'cta_url' => '/shop?max=50000', 'placement' => 'side', 'is_active' => true, 'sort_order' => 1]
+        );
+        Banner::updateOrCreate(
+            ['title' => 'Flash Sales This Week'],
+            ['subtitle' => 'Up to 40% off', 'image' => '/media/makers/banner-5.jpg', 'cta_label' => 'See deals', 'cta_url' => '/shop?on_sale=1&sort=discount', 'placement' => 'side', 'is_active' => true, 'sort_order' => 2]
+        );
+
+        Coupon::updateOrCreate(['code' => 'WELCOME10'], [
+            'description' => '10% off your first order (up to ₦5,000)',
+            'type' => 'percent', 'value' => 10, 'max_discount' => 5000, 'per_user_limit' => 1,
+            'first_order_only' => true, 'is_public' => true, 'is_active' => true,
+        ]);
+        Coupon::updateOrCreate(['code' => 'FREESHIP'], [
+            'description' => 'Free delivery on orders over ₦50,000',
+            'type' => 'free_shipping', 'value' => 0, 'min_order' => 50000, 'per_user_limit' => 3,
+            'is_public' => true, 'is_active' => true,
+        ]);
+
+        Banner::updateOrCreate(
             ['title' => 'Join as a Vendor Today'],
             [
                 'subtitle' => 'Turn your craft into a thriving business on Atelier Nigeria.',
@@ -237,10 +298,27 @@ class MarketplaceSeeder extends Seeder
 
     private function specsFor(string $category): array
     {
+        $rows = match ($category) {
+            'fine-art' => [['Medium', 'Oil on stretched canvas'], ['Dimensions', '60 × 80 cm'], ['Framing', 'Unframed, ready to hang']],
+            'sculpture' => [['Material', 'Hand-carved hardwood'], ['Height', '45 cm'], ['Finish', 'Natural oil']],
+            'fashion' => [['Fabric', '100% cotton adire'], ['Fit', 'Regular'], ['Care', 'Hand wash cold']],
+            'leatherwork' => [['Material', 'Full-grain cow leather'], ['Lining', 'Cotton'], ['Made in', 'Aba, Abia State']],
+            'ceramics' => [['Material', 'Stoneware clay'], ['Height', '18 cm'], ['Food safe', 'Yes']],
+            default => [['Material', 'Iroko wood and woven fibre'], ['Dimensions', '50 × 40 × 45 cm']],
+        };
+
+        return array_map(fn ($r) => ['label' => $r[0], 'value' => $r[1]], $rows);
+    }
+
+    private function featuresFor(string $category): string
+    {
         return match ($category) {
-            'fine-art', 'sculpture' => ['medium' => 'Oil and pigment', 'dimensions' => '60 × 80 cm'],
-            'fashion', 'leatherwork' => ['materials' => 'Hand-finished Nigerian craft'],
-            default => ['materials' => 'Natural clay and timber', 'dimensions' => '18 cm'],
+            'fine-art' => "Original, signed by the artist\nCertificate of authenticity\nShipped rolled in a protective tube",
+            'fashion' => "Hand-dyed adire pattern\nBreathable cotton for warm weather\nEvery piece is one of a kind",
+            'leatherwork' => "Hand-stitched in Aba\nFull-grain leather that ages beautifully\nSolid brass hardware",
+            'ceramics' => "Wheel-thrown by hand\nGlazed inside, raw clay outside\nDishwasher safe",
+            'sculpture' => "Carved from a single block\nSigned base\nIndoor display",
+            default => "Handmade by a Nigerian artisan\nSustainably sourced materials\nAssembled before delivery",
         };
     }
 
@@ -248,9 +326,11 @@ class MarketplaceSeeder extends Seeder
     {
         $product->variants()->delete();
 
+        $palette = [['Indigo', 'Clay'], ['Ochre', 'Indigo'], ['Ivory', 'Clay'], ['Brown', 'Black'], ['Tan', 'Black']];
+        $pick = $palette[$product->id % count($palette)];
         $options = match ($category) {
-            'fashion' => ['color' => ['Indigo', 'Clay'], 'size' => ['S', 'M', 'L']],
-            'leatherwork' => ['color' => ['Brown', 'Black'], 'size' => ['40', '42', '44']],
+            'fashion' => ['color' => $pick, 'size' => ['S', 'M', 'L']],
+            'leatherwork' => ['color' => $product->id % 2 ? ['Brown', 'Black'] : ['Tan', 'Black'], 'size' => ['40', '42', '44']],
             default => [],
         };
 
@@ -258,16 +338,23 @@ class MarketplaceSeeder extends Seeder
             return;
         }
 
+        // Split the product's stock across its options (product stock = sum of variants).
+        $combos = [];
         foreach ($options['color'] as $color) {
             foreach ($options['size'] as $size) {
-                ProductVariant::create([
-                    'product_id' => $product->id,
-                    'name' => $color . ' / ' . $size,
-                    'stock' => $product->stock,
-                    'attributes' => ['color' => $color, 'size' => $size],
-                ]);
+                $combos[] = ['color' => $color, 'size' => $size];
             }
         }
+        foreach ($combos as $k => $attrs) {
+            ProductVariant::create([
+                'product_id' => $product->id,
+                'name' => $attrs['color'].' / '.$attrs['size'],
+                'sku' => $product->sku ? $product->sku.'-'.strtoupper(substr($attrs['color'], 0, 2)).$attrs['size'] : null,
+                'stock' => $k === 0 ? 0 : 1 + (($product->id + $k) % 4),
+                'attributes' => $attrs,
+            ]);
+        }
+        $product->syncStockFromVariants();
     }
 
     private function seedDeliveredOrder(User $customer, array $seeded): void
