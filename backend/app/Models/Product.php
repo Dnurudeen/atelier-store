@@ -75,6 +75,20 @@ class Product extends Model
         return $rows;
     }
 
+    /** A timed sale that has ended no longer shows a "was" price or discount. */
+    public function getCompareAtPriceAttribute($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $endsAt = $this->attributes['sale_ends_at'] ?? null;
+        if ($endsAt && now()->greaterThan($endsAt)) {
+            return null;
+        }
+
+        return number_format((float) $value, 2, '.', '');
+    }
+
     /** Product stock mirrors the sum of its variants when it has any. */
     public function syncStockFromVariants(): void
     {

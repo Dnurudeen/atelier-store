@@ -4,178 +4,166 @@ import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Headphones, RotateCcw, ShieldCheck, Store } from "lucide-react";
 import type { Banner } from "@/lib/api";
 import { AppImage } from "@/components/ui/app-image";
 import { media } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
+const FALLBACK_SLIDES: Banner[] = [
+  {
+    id: -1,
+    title: "Handmade in Nigeria, delivered nationwide",
+    subtitle: "Art, fashion, ceramics and home pieces from verified makers.",
+    image: media.hero(1),
+    cta_label: "Shop now",
+    cta_url: "/shop",
+    is_active: true,
+  },
+];
+
 export function HeroBanner({ banners }: { banners: Banner[] }) {
-  const activeBanners = banners.filter((b) => b.is_active);
+  const hero = banners.filter((b) => b.is_active && (b.placement ?? "hero") === "hero");
+  const slides = hero.length ? hero : FALLBACK_SLIDES;
+  const side = banners.filter((b) => b.is_active && b.placement === "side").slice(0, 2);
+
   const [selected, setSelected] = useState(0);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 5500, stopOnInteraction: false }),
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: slides.length > 1 }, [
+    Autoplay({ delay: 5500, stopOnInteraction: false, stopOnMouseEnter: true }),
   ]);
 
   const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelected(emblaApi.selectedScrollSnap());
+    if (emblaApi) setSelected(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
   useEffect(() => {
     if (!emblaApi) return;
-    onSelect();
     emblaApi.on("select", onSelect);
     return () => {
       emblaApi.off("select", onSelect);
     };
   }, [emblaApi, onSelect]);
 
-  if (activeBanners.length === 0) return null;
-
-  const current = activeBanners[selected] ?? activeBanners[0];
-  const sideBanners = activeBanners.slice(1, 3);
-
   return (
-    <section className="bg-[var(--page-bg)] pt-3 md:pt-4">
+    <section className="pt-2 md:pt-4">
       <div className="container-atelier">
-        <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-stretch">
-          <div className="relative min-w-0 overflow-hidden rounded-md border border-border bg-white">
-            <div className="relative h-[220px] w-full sm:h-[260px] md:h-[320px] lg:h-[340px]">
-              {activeBanners.map((banner, index) => (
-                <div
-                  key={banner.id}
-                  className={cn(
-                    "absolute inset-0 transition-opacity duration-700",
-                    index === selected ? "opacity-100" : "opacity-0"
-                  )}
-                >
-                  <AppImage
-                    src={banner.image}
-                    alt=""
-                    fill
-                    priority={index === 0}
-                    sizes="(max-width:1024px) 100vw, 75vw"
-                    frameClassName="absolute inset-0"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/10" />
-                </div>
-              ))}
-
-              <div className="absolute inset-0 z-10 flex items-end p-4 md:items-center md:p-8">
-                <div className="max-w-xl text-white">
-                  <p className="mb-1 text-[10px] font-semibold tracking-[0.18em] text-white/70 uppercase">
-                    Atelier Nigeria
-                  </p>
-                  <h1 className="font-display text-[1.55rem] leading-tight text-balance md:text-4xl">
-                    {current.title}
-                  </h1>
-                  {current.subtitle && (
-                    <p className="mt-2 max-w-md text-[13px] leading-relaxed text-white/85 md:text-sm">
-                      {current.subtitle}
-                    </p>
-                  )}
-                  {current.cta_url && current.cta_label && (
-                    <Link
-                      href={current.cta_url}
-                      className="mt-4 inline-flex h-9 items-center rounded-md bg-crimson px-4 text-sm font-semibold text-white transition hover:bg-crimson-hover md:h-10 md:px-5"
-                    >
-                      {current.cta_label}
-                    </Link>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="absolute top-1/2 left-2 z-20 hidden -translate-y-1/2 rounded-full bg-white/90 p-2 text-burgundy shadow-sm md:inline-flex"
-                onClick={() => emblaApi?.scrollPrev()}
-                aria-label="Previous slide"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                type="button"
-                className="absolute top-1/2 right-2 z-20 hidden -translate-y-1/2 rounded-full bg-white/90 p-2 text-burgundy shadow-sm md:inline-flex"
-                onClick={() => emblaApi?.scrollNext()}
-                aria-label="Next slide"
-              >
-                <ChevronRight size={18} />
-              </button>
-
-              <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
-                {activeBanners.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    aria-label={`Go to slide ${i + 1}`}
-                    onClick={() => emblaApi?.scrollTo(i)}
-                    className={cn(
-                      "h-1.5 rounded-full transition-all",
-                      i === selected ? "w-5 bg-crimson" : "w-1.5 bg-white/70 hover:bg-white"
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div ref={emblaRef} className="sr-only" aria-hidden>
-              <div className="flex">
-                {activeBanners.map((banner) => (
-                  <div key={banner.id} className="min-w-0 flex-[0_0_100%]">
-                    {banner.title}
+        <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-3">
+          <div className="relative min-w-0 overflow-hidden rounded-md bg-white" aria-roledescription="carousel" aria-label="Featured promotions">
+            <div ref={emblaRef} className="overflow-hidden">
+              <div className="flex touch-pan-y">
+                {slides.map((banner, index) => (
+                  <div key={banner.id} className="relative min-w-0 flex-[0_0_100%]" aria-roledescription="slide" aria-label={`${index + 1} of ${slides.length}`}>
+                    <div className="relative h-[180px] w-full sm:h-[260px] md:h-[320px] lg:h-[360px]">
+                      <AppImage
+                        src={banner.image}
+                        alt=""
+                        fill
+                        priority={index === 0}
+                        sizes="(max-width:1024px) 100vw, 900px"
+                        frameClassName="absolute inset-0"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-burgundy-deep/85 via-burgundy-deep/40 to-transparent" />
+                      <div className="absolute inset-0 flex items-center p-4 md:p-10">
+                        <div className="max-w-[70%] text-white md:max-w-lg">
+                          {index === 0 ? (
+                            <h1 className="font-display text-xl leading-tight text-balance sm:text-2xl md:text-4xl">{banner.title}</h1>
+                          ) : (
+                            <h2 className="font-display text-xl leading-tight text-balance sm:text-2xl md:text-4xl">{banner.title}</h2>
+                          )}
+                          {banner.subtitle && (
+                            <p className="mt-1.5 line-clamp-2 text-[12px] leading-relaxed text-white/85 md:mt-2 md:text-sm">{banner.subtitle}</p>
+                          )}
+                          {banner.cta_url && (
+                            <Link
+                              href={banner.cta_url}
+                              className="mt-3 inline-flex h-8 items-center rounded-md bg-crimson px-3.5 text-[13px] font-semibold text-white transition hover:bg-crimson-hover md:mt-5 md:h-10 md:px-5 md:text-sm"
+                            >
+                              {banner.cta_label || "Shop now"}
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {slides.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="absolute top-1/2 left-2 hidden -translate-y-1/2 rounded-full bg-white/90 p-2 text-burgundy shadow md:inline-flex"
+                  onClick={() => emblaApi?.scrollPrev()}
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="absolute top-1/2 right-2 hidden -translate-y-1/2 rounded-full bg-white/90 p-2 text-burgundy shadow md:inline-flex"
+                  onClick={() => emblaApi?.scrollNext()}
+                  aria-label="Next slide"
+                >
+                  <ChevronRight size={18} />
+                </button>
+                <div className="absolute bottom-2.5 left-1/2 flex -translate-x-1/2 gap-1.5">
+                  {slides.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={`Go to slide ${i + 1}`}
+                      aria-current={i === selected}
+                      onClick={() => emblaApi?.scrollTo(i)}
+                      className={cn("h-1.5 rounded-full transition-all", i === selected ? "w-5 bg-white" : "w-1.5 bg-white/55 hover:bg-white")}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="hidden h-[340px] flex-col gap-2 lg:flex">
-            {(sideBanners.length >= 2
-              ? sideBanners
-              : [
-                  {
-                    id: -1,
-                    title: "Meet the makers",
-                    subtitle: "Visit artisan storefronts",
-                    image: media.hero(2),
-                    cta_url: "/makers",
-                    cta_label: "Explore",
-                    is_active: true,
-                  },
-                  {
-                    id: -2,
-                    title: "Sell your craft",
-                    subtitle: "Open a maker store",
-                    image: media.hero(3),
-                    cta_url: "/become-a-vendor",
-                    cta_label: "Join",
-                    is_active: true,
-                  },
-                ]
-            ).map((banner) => (
-              <Link
-                key={banner.id}
-                href={banner.cta_url || "/shop"}
-                className="group relative min-h-0 flex-1 overflow-hidden rounded-md border border-border bg-white"
-              >
-                <AppImage
-                  src={banner.image}
-                  alt=""
-                  fill
-                  sizes="240px"
-                  frameClassName="absolute inset-0"
-                  className="transition duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-burgundy-deep/85 via-burgundy-deep/35 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-3 text-white">
-                  <p className="font-display text-base leading-tight">{banner.title}</p>
-                  {banner.subtitle && (
-                    <p className="mt-0.5 line-clamp-2 text-[11px] text-white/80">{banner.subtitle}</p>
-                  )}
-                </div>
-              </Link>
-            ))}
+          {/* Side column: two promo banners (admin "side" placement) or service promises */}
+          <div className="hidden flex-col gap-3 lg:flex">
+            {side.length === 2 ? (
+              side.map((banner) => (
+                <Link key={banner.id} href={banner.cta_url || "/shop"} className="group relative min-h-0 flex-1 overflow-hidden rounded-md bg-white">
+                  <AppImage src={banner.image} alt={banner.title} fill sizes="260px" frameClassName="absolute inset-0" className="transition duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-burgundy-deep/85 to-transparent" />
+                  <p className="absolute inset-x-0 bottom-0 p-3 font-display text-base leading-tight text-white">{banner.title}</p>
+                </Link>
+              ))
+            ) : (
+              <div className="flex flex-1 flex-col justify-between rounded-md bg-white p-4">
+                {[
+                  { icon: Headphones, title: "Customer care", text: "Real people, 7 days a week" },
+                  { icon: ShieldCheck, title: "Secure payment", text: "Cards, transfer & USSD via Paystack" },
+                  { icon: RotateCcw, title: "Easy returns", text: "7 days on eligible items" },
+                  { icon: Store, title: "Sell on Atelier", text: "Open your store in minutes", href: "/become-a-vendor" },
+                ].map(({ icon: Icon, title, text, href }) => {
+                  const body = (
+                    <>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-warm text-burgundy">
+                        <Icon size={18} />
+                      </span>
+                      <span>
+                        <span className="block text-[13px] font-semibold">{title}</span>
+                        <span className="block text-[12px] text-muted">{text}</span>
+                      </span>
+                    </>
+                  );
+                  return href ? (
+                    <Link key={title} href={href} className="flex items-center gap-3 rounded-md hover:text-burgundy">
+                      {body}
+                    </Link>
+                  ) : (
+                    <div key={title} className="flex items-center gap-3">
+                      {body}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

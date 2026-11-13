@@ -459,7 +459,7 @@ class CatalogController extends Controller
         return $this->publishedScope(
             Product::query()
                 ->with(['images', 'store', 'category', 'brand:id,name,slug'])
-                ->withExists(['sponsorships as is_sponsored' => fn ($query) => $query->where('status', 'active')])
+                ->withExists(['sponsorships as is_sponsored' => fn ($query) => $query->where('status', 'active'), 'variants as has_variants'])
         );
     }
 

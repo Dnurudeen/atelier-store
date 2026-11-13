@@ -1,353 +1,298 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   CircleHelp,
-  Home,
-  LayoutGrid,
+  Heart,
+  Inbox,
+  LayoutDashboard,
   LogOut,
   Menu,
-  Palette,
-  Search,
-  Shirt,
-  ShoppingBag,
+  Package,
+  Phone,
+  RotateCcw,
+  ShoppingCart,
   Store,
+  Ticket,
+  Truck,
   User,
-  X,
-  Gem,
-  Footprints,
-  Flower2,
 } from "lucide-react";
 import { BrandLogo } from "@/components/brand/logo";
-import { api, type Category } from "@/lib/api";
-import { useCartStore } from "@/store/cart";
-import { useAuthStore } from "@/store/auth";
+import { CategoryDrawer } from "@/components/layout/category-drawer";
+import { SearchBox } from "@/components/layout/search-box";
+import { categoryIcon } from "@/lib/category-icons";
+import { useCategories, useDismiss } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/auth";
+import { useCartStore } from "@/store/cart";
 
-const fallbackCategories = [
-  { slug: "fine-art", name: "Fine Art" },
-  { slug: "fashion", name: "Fashion" },
-  { slug: "ceramics", name: "Ceramics" },
-  { slug: "sculpture", name: "Sculpture" },
-  { slug: "leatherwork", name: "Leatherwork" },
-  { slug: "home-decor", name: "Home Decor" },
-];
+function Dropdown({
+  label,
+  icon: Icon,
+  children,
+  align = "right",
+  buttonClassName,
+}: {
+  label: React.ReactNode;
+  icon: typeof User;
+  children: (close: () => void) => React.ReactNode;
+  align?: "left" | "right";
+  buttonClassName?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(ref, open, close);
 
-const categoryIcons: Record<string, typeof Palette> = {
-  "fine-art": Palette,
-  fashion: Shirt,
-  ceramics: Flower2,
-  sculpture: Gem,
-  leatherwork: Footprints,
-  "home-decor": Home,
-};
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-sm text-foreground/85 hover:bg-surface hover:text-burgundy md:px-2.5",
+          open && "bg-surface text-burgundy",
+          buttonClassName
+        )}
+      >
+        <Icon size={20} strokeWidth={1.8} />
+        <span className="hidden max-w-[110px] truncate font-medium lg:inline">{label}</span>
+        <ChevronDown size={14} className={cn("hidden text-muted transition-transform lg:block", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className={cn(
+            "absolute top-full z-[60] mt-1 w-60 overflow-hidden rounded-md border border-border bg-white py-1.5 shadow-xl",
+            align === "right" ? "right-0" : "left-0"
+          )}
+        >
+          {children(close)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuLink({ href, icon: Icon, children, onClick }: { href: string; icon: typeof User; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <Link href={href} onClick={onClick} role="menuitem" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-surface">
+      <Icon size={17} className="text-foreground/70" />
+      {children}
+    </Link>
+  );
+}
 
 export function Header() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [categories, setCategories] = useState<{ slug: string; name: string }[]>(fallbackCategories);
-  const accountRef = useRef<HTMLDivElement>(null);
-  const helpRef = useRef<HTMLDivElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const count = useCartStore((s) => s.count());
-  const openCart = useCartStore((s) => s.open);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { data: categories = [] } = useCategories();
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  const accountHref = user?.roles?.includes("admin")
-    ? "/admin"
-    : user?.roles?.includes("vendor")
-      ? "/vendor"
-      : "/account";
+  const roles = user?.roles ?? [];
+  const dashboard = roles.includes("admin")
+    ? { href: "/admin", label: "Admin console" }
+    : roles.includes("vendor")
+      ? { href: "/vendor", label: "Seller Center" }
+      : null;
+  const firstName = user?.name?.split(" ")[0];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    void api<{ data: Category[] }>("/categories")
-      .then((res) => {
-        const rows = (res.data || [])
-          .filter((category) => category.slug && category.name)
-          .map((category) => ({ slug: category.slug, name: category.name }));
-        if (rows.length) setCategories(rows);
-      })
-      .catch(() => setCategories(fallbackCategories));
-  }, []);
-
-  useEffect(() => {
-    function onDocClick(event: MouseEvent) {
-      const target = event.target as Node;
-      if (accountRef.current && !accountRef.current.contains(target)) setAccountOpen(false);
-      if (helpRef.current && !helpRef.current.contains(target)) setHelpOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
-  function onSearch(event: FormEvent) {
-    event.preventDefault();
-    window.location.href = `/shop?q=${encodeURIComponent(query)}`;
-  }
+  const isHome = pathname === "/";
 
   return (
-    <header className={cn("sticky top-0 z-50 bg-white", scrolled && "shadow-sm")}>
-      <div className="hidden border-b border-border bg-[var(--page-bg)] text-[12px] text-foreground/80 md:block">
-        <div className="container-atelier flex h-8 items-center justify-between gap-4">
-          <Link href="/become-a-vendor" className="inline-flex items-center gap-1.5 font-medium text-crimson hover:text-burgundy">
-            <Store size={13} />
-            Sell on Atelier
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/makers" className="hover:text-burgundy">
-              Maker stores
+    <>
+      <header className={cn("sticky top-0 z-50 bg-white", scrolled && "shadow-[0_2px_8px_rgba(0,0,0,0.08)]")}>
+        {/* Top strip */}
+        <div className="hidden border-b border-border bg-[var(--page-bg)] text-[12px] text-foreground/80 md:block">
+          <div className="container-atelier flex h-8 items-center justify-between gap-4">
+            <Link href="/become-a-vendor" className="inline-flex items-center gap-1.5 font-semibold text-crimson hover:text-burgundy">
+              <Store size={13} />
+              Sell on Atelier
             </Link>
-            <Link href="/shop" className="hover:text-burgundy">
-              Shop
-            </Link>
-            <a href="mailto:hello@atelier.ng" className="hover:text-burgundy">
-              Call to order
-            </a>
+            <div className="flex items-center gap-5">
+              <span className="inline-flex items-center gap-1.5">
+                <Truck size={13} className="text-burgundy" /> Nationwide delivery
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <RotateCcw size={13} className="text-burgundy" /> 7-day easy returns
+              </span>
+              <Link href="/contact" className="inline-flex items-center gap-1.5 hover:text-burgundy">
+                <Phone size={13} className="text-burgundy" /> Contact us
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="border-b border-border bg-white">
-        <div className="container-atelier flex h-14 items-center gap-3 md:h-[72px] md:gap-5">
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
-              className="rounded-md p-2 hover:bg-surface md:hidden"
-              onClick={() => setMobileOpen((v) => !v)}
-              aria-label="Toggle menu"
-            >
-              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-            <BrandLogo variant="header" priority />
-          </div>
-
-          <form onSubmit={onSearch} className="hidden min-w-0 flex-1 md:block">
-            <div className="flex items-center gap-2">
-              <label className="flex min-w-0 flex-1 items-center rounded-md border border-[#c7c7cd] bg-white px-3 focus-within:border-burgundy">
-                <Search size={16} className="shrink-0 text-muted" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search products, brands and categories"
-                  className="h-10 w-full bg-transparent px-2 text-sm outline-none placeholder:text-muted"
-                />
-              </label>
+        {/* Main bar */}
+        <div className="border-b border-border bg-white">
+          <div className="container-atelier flex h-14 items-center gap-2 md:h-[68px] md:gap-5">
+            <div className="flex shrink-0 items-center gap-1">
               <button
-                type="submit"
-                className="h-10 shrink-0 rounded-md bg-crimson px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-crimson-hover"
+                className="-ml-2 rounded-md p-2 hover:bg-surface"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open categories menu"
               >
-                Search
+                <Menu size={20} />
               </button>
+              <BrandLogo variant="header" priority />
             </div>
-          </form>
 
-          <div className="ml-auto flex items-center gap-0.5 md:gap-1">
-            <Link
-              href={query ? `/shop?q=${encodeURIComponent(query)}` : "/shop"}
-              className="rounded-md p-2.5 text-foreground/80 hover:bg-surface hover:text-burgundy md:hidden"
-              aria-label="Search"
-            >
-              <Search size={18} />
-            </Link>
+            <Suspense fallback={<div className="hidden h-10 flex-1 md:block" />}>
+              <SearchBox className="hidden min-w-0 flex-1 md:block" />
+            </Suspense>
 
-            <div className="relative hidden sm:block" ref={accountRef}>
-              <button
-                type="button"
-                onClick={() => {
-                  setAccountOpen((open) => !open);
-                  setHelpOpen(false);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm text-foreground/85 hover:bg-surface hover:text-burgundy"
-              >
-                <User size={18} />
-                <span className="hidden lg:inline">Account</span>
-                <ChevronDown size={14} className="text-muted" />
-              </button>
-              {accountOpen && (
-                <div className="absolute top-full right-0 z-50 mt-1 w-48 overflow-hidden rounded-md border border-border bg-white py-1 shadow-lg">
-                  {user ? (
+            <div className="ml-auto flex items-center gap-0.5 md:gap-1">
+              <Dropdown label={user ? `Hi, ${firstName}` : "Account"} icon={User}>
+                {(close) =>
+                  user ? (
                     <>
-                      <Link
-                        href={accountHref}
-                        onClick={() => setAccountOpen(false)}
-                        className="block px-3 py-2 text-sm hover:bg-surface"
-                      >
-                        My account
-                      </Link>
-                      <Link
-                        href="/account/orders"
-                        onClick={() => setAccountOpen(false)}
-                        className="block px-3 py-2 text-sm hover:bg-surface"
-                      >
-                        Orders
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAccountOpen(false);
-                          void logout();
-                        }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface"
-                      >
-                        <LogOut size={14} />
-                        Sign out
-                      </button>
+                      <div className="border-b border-border px-4 pt-1.5 pb-2.5">
+                        <p className="truncate text-sm font-semibold">{user.name}</p>
+                        <p className="truncate text-xs text-muted">{user.email}</p>
+                      </div>
+                      {dashboard && (
+                        <MenuLink href={dashboard.href} icon={LayoutDashboard} onClick={close}>
+                          <span className="font-semibold text-burgundy">{dashboard.label}</span>
+                        </MenuLink>
+                      )}
+                      <MenuLink href="/account" icon={User} onClick={close}>My Account</MenuLink>
+                      <MenuLink href="/account/orders" icon={Package} onClick={close}>Orders</MenuLink>
+                      <MenuLink href="/account/inbox" icon={Inbox} onClick={close}>Inbox</MenuLink>
+                      <MenuLink href="/account/wishlist" icon={Heart} onClick={close}>Saved Items</MenuLink>
+                      <MenuLink href="/account/vouchers" icon={Ticket} onClick={close}>Vouchers</MenuLink>
+                      <div className="mt-1 border-t border-border pt-1">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            close();
+                            void logout();
+                          }}
+                          className="flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-crimson hover:bg-surface"
+                        >
+                          <LogOut size={16} /> Log out
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <>
-                      <Link
-                        href="/login"
-                        onClick={() => setAccountOpen(false)}
-                        className="block px-3 py-2 text-sm font-medium text-burgundy hover:bg-surface"
-                      >
-                        Sign in
-                      </Link>
-                      <Link
-                        href="/register"
-                        onClick={() => setAccountOpen(false)}
-                        className="block px-3 py-2 text-sm hover:bg-surface"
-                      >
-                        Create account
-                      </Link>
+                      <div className="px-3 pt-1.5 pb-2">
+                        <Link
+                          href={`/login${pathname && pathname !== "/" ? `?next=${encodeURIComponent(pathname)}` : ""}`}
+                          onClick={close}
+                          className="flex h-10 w-full items-center justify-center rounded-md bg-crimson text-sm font-semibold text-white hover:bg-crimson-hover"
+                        >
+                          Sign in
+                        </Link>
+                        <p className="mt-2 text-center text-xs text-muted">
+                          New here?{" "}
+                          <Link href="/register" onClick={close} className="font-semibold text-burgundy hover:underline">
+                            Create account
+                          </Link>
+                        </p>
+                      </div>
+                      <div className="border-t border-border pt-1">
+                        <MenuLink href="/login?next=/account/orders" icon={Package} onClick={close}>Orders</MenuLink>
+                        <MenuLink href="/login?next=/account/wishlist" icon={Heart} onClick={close}>Saved Items</MenuLink>
+                      </div>
+                    </>
+                  )
+                }
+              </Dropdown>
+
+              <div className="hidden sm:block">
+                <Dropdown label="Help" icon={CircleHelp}>
+                  {(close) => (
+                    <>
+                      <MenuLink href="/help" icon={CircleHelp} onClick={close}>Help Center</MenuLink>
+                      <MenuLink href="/account/orders" icon={Package} onClick={close}>Track your order</MenuLink>
+                      <MenuLink href="/returns" icon={RotateCcw} onClick={close}>Returns &amp; refunds</MenuLink>
+                      <MenuLink href="/shipping" icon={Truck} onClick={close}>Delivery options</MenuLink>
+                      <div className="px-3 pt-2 pb-1">
+                        <Link
+                          href="/contact"
+                          onClick={close}
+                          className="flex h-9 w-full items-center justify-center rounded-md border border-burgundy text-sm font-semibold text-burgundy hover:bg-burgundy hover:text-white"
+                        >
+                          Contact us
+                        </Link>
+                      </div>
                     </>
                   )}
-                </div>
-              )}
-            </div>
+                </Dropdown>
+              </div>
 
-            <div className="relative hidden sm:block" ref={helpRef}>
-              <button
-                type="button"
-                onClick={() => {
-                  setHelpOpen((open) => !open);
-                  setAccountOpen(false);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm text-foreground/85 hover:bg-surface hover:text-burgundy"
+              <Link
+                href="/cart"
+                className="relative inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-sm text-foreground/85 hover:bg-surface hover:text-burgundy md:px-2.5"
+                aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
               >
-                <CircleHelp size={18} />
-                <span className="hidden lg:inline">Help</span>
-                <ChevronDown size={14} className="text-muted" />
-              </button>
-              {helpOpen && (
-                <div className="absolute top-full right-0 z-50 mt-1 w-52 overflow-hidden rounded-md border border-border bg-white py-1 shadow-lg">
-                  <Link href="/become-a-vendor" onClick={() => setHelpOpen(false)} className="block px-3 py-2 text-sm hover:bg-surface">
-                    Sell on Atelier
-                  </Link>
-                  <Link href="/makers" onClick={() => setHelpOpen(false)} className="block px-3 py-2 text-sm hover:bg-surface">
-                    Find a maker
-                  </Link>
-                  <a href="mailto:hello@atelier.ng" className="block px-3 py-2 text-sm hover:bg-surface">
-                    Contact support
-                  </a>
-                </div>
-              )}
-            </div>
-
-            <button
-              type="button"
-              className="relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm text-foreground/85 hover:bg-surface hover:text-burgundy"
-              onClick={openCart}
-              aria-label="Cart"
-            >
-              <ShoppingBag size={18} />
-              <span className="hidden lg:inline">Cart</span>
-              {count > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-crimson px-1 text-[10px] font-semibold text-white lg:static lg:ml-0.5">
-                  {count}
+                <span className="relative">
+                  <ShoppingCart size={21} strokeWidth={1.8} />
+                  {count > 0 && (
+                    <span className="absolute -top-2 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-crimson px-1 text-[10px] font-bold text-white">
+                      {count > 99 ? "99+" : count}
+                    </span>
+                  )}
                 </span>
-              )}
-            </button>
+                <span className="hidden font-medium lg:inline">Cart</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Mobile search row (always visible, like Jumia's app-style header) */}
+          <div className="container-atelier pb-2.5 md:hidden">
+            <Suspense fallback={<div className="h-10" />}>
+              <SearchBox />
+            </Suspense>
           </div>
         </div>
-      </div>
 
-      <div className="border-b border-border bg-[var(--page-bg)]">
-        <nav className="container-atelier flex gap-1 overflow-x-auto py-2 text-[12px] md:gap-2 md:py-2.5 md:text-[13px]">
-          <Link
-            href="/makers"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-foreground/80 hover:bg-white hover:text-burgundy"
-          >
-            <Store size={15} />
-            Official Store
-          </Link>
-          <Link
-            href="/shop"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-foreground/80 hover:bg-white hover:text-burgundy"
-          >
-            <LayoutGrid size={15} />
-            All
-          </Link>
-          {categories.map((category) => {
-            const Icon = categoryIcons[category.slug] || LayoutGrid;
-            return (
-              <Link
-                key={category.slug}
-                href={`/shop?category=${category.slug}`}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-foreground/80 hover:bg-white hover:text-burgundy"
-              >
-                <Icon size={15} />
-                {category.name}
+        {/* Category row: desktop, shown on home and catalogue pages */}
+        {(isHome || pathname?.startsWith("/category") || pathname?.startsWith("/shop")) && categories.length > 0 && (
+          <div className="hidden border-b border-border bg-white md:block">
+            <nav className="container-atelier flex gap-1 overflow-x-auto py-1.5 text-[13px]" aria-label="Categories">
+              <Link href="/makers" className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-foreground/80 hover:bg-surface hover:text-burgundy">
+                <Store size={15} /> Official Stores
               </Link>
-            );
-          })}
-        </nav>
-      </div>
+              {categories.map((category) => {
+                const Icon = categoryIcon(category.slug);
+                return (
+                  <Link
+                    key={category.slug}
+                    href={`/category/${category.slug}`}
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-foreground/80 hover:bg-surface hover:text-burgundy",
+                      pathname === `/category/${category.slug}` && "bg-surface font-semibold text-burgundy"
+                    )}
+                  >
+                    <Icon size={15} />
+                    {category.name}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+      </header>
 
-      {mobileOpen && (
-        <div className="border-b border-border bg-white md:hidden">
-          <form onSubmit={onSearch} className="container-atelier space-y-2 py-3">
-            <label className="flex items-center gap-2 rounded-md border border-border bg-white px-3">
-              <Search size={16} className="text-muted" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search products, brands and categories"
-                className="h-10 w-full bg-transparent text-sm outline-none"
-              />
-            </label>
-            <button type="submit" className="h-10 w-full rounded-md bg-crimson text-sm font-semibold text-white">
-              Search
-            </button>
-          </form>
-          <nav className="container-atelier flex flex-col gap-1 pb-3">
-            <Link href="/become-a-vendor" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-crimson hover:bg-surface">
-              Sell on Atelier
-            </Link>
-            {user ? (
-              <>
-                <Link href={accountHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface">
-                  My account
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    void logout();
-                  }}
-                  className="rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:bg-surface"
-                >
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-surface">
-                Sign in
-              </Link>
-            )}
-          </nav>
-        </div>
-      )}
-    </header>
+      <CategoryDrawer open={drawerOpen} onClose={closeDrawer} />
+    </>
   );
 }

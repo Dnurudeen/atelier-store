@@ -141,6 +141,7 @@ class OrderService
             $order->payment_status = $paymentStatus;
             $order->save();
             $order->syncStatus();
+            app(VoucherService::class)->release($order);
 
             Payment::where('order_id', $order->id)->where('status', 'pending')->update([
                 'status' => $paymentStatus === 'abandoned' ? 'abandoned' : 'failed',

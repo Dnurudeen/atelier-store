@@ -62,6 +62,8 @@ type RequestOptions = {
   token?: string | null;
   headers?: Record<string, string>;
   formData?: FormData;
+  /** Server-side only: cache the response for N seconds (ISR) instead of no-store. */
+  revalidate?: number;
 };
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -87,7 +89,9 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
       method: options.method || "GET",
       headers,
       body,
-      cache: "no-store",
+      ...(options.revalidate !== undefined && !token
+        ? { next: { revalidate: options.revalidate } }
+        : { cache: "no-store" as const }),
     });
   } catch {
     const error: ApiError = { message: "We couldn't reach Atelier. Check your connection and try again.", status: 0 };
@@ -116,9 +120,13 @@ export type PaginationMeta = {
 
 export type Category = {
   id: number;
+  parent_id?: number | null;
   name: string;
   slug: string;
   image?: string | null;
+  icon?: string | null;
+  is_active?: boolean;
+  sort_order?: number;
   description?: string | null;
   children?: Category[];
 };
@@ -133,7 +141,10 @@ export type Store = {
   location?: string | null;
   rating?: number | string;
   products_count?: number;
+  followers_count?: number;
+  is_following?: boolean;
   seller_score?: SellerScore | null;
+  created_at?: string;
   status: "pending" | "approved" | "rejected" | "suspended";
   status_reason?: string | null;
   shipping_fee?: number | string;
@@ -156,9 +167,15 @@ export type SellerScore = {
 export type Review = {
   id: number;
   rating: number;
+  title?: string | null;
   comment?: string | null;
+  is_hidden?: boolean;
+  vendor_reply?: string | null;
+  vendor_replied_at?: string | null;
   created_at?: string;
   user?: { id: number; name: string };
+  product?: Product;
+  product_id?: number;
 };
 
 export type ProductImage = {
@@ -176,27 +193,53 @@ export type ProductVariant = {
   attributes?: Record<string, string>;
 };
 
+export type Brand = { id: number; name: string; slug: string; logo?: string | null; products_count?: number };
+
+export type SpecRow = { label: string; value: string };
+
 export type Product = {
   id: number;
   name: string;
   slug: string;
+  sku?: string | null;
+  condition?: "new" | "refurbished" | "used";
   description?: string | null;
-  specs?: { medium?: string; dimensions?: string; materials?: string } | null;
+  key_features?: string | null;
+  whats_in_box?: string | null;
+  warranty?: string | null;
+  specs?: SpecRow[] | Record<string, string | undefined> | null;
+  spec_list?: SpecRow[];
   price: number | string;
   compare_at_price?: number | string | null;
   sale_ends_at?: string | null;
   stock: number;
+  low_stock_threshold?: number;
+  sold_count?: number;
+  weight_kg?: number | string | null;
+  length_cm?: number | string | null;
+  width_cm?: number | string | null;
+  height_cm?: number | string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
   status: "draft" | "pending" | "published" | "rejected";
+  rejection_reason?: string | null;
   is_featured?: boolean;
   is_sponsored?: boolean;
+  has_variants?: boolean;
   rating?: number | string;
   reviews_count?: number;
-  category?: Category;
+  rating_breakdown?: Record<string, number>;
+  followers_count?: number;
+  category_id?: number | null;
+  brand_id?: number | null;
+  category?: Category & { parent?: Category | null };
+  brand?: Brand | null;
   store?: Store;
   images?: ProductImage[];
   variants?: ProductVariant[];
   reviews?: Review[];
   tags?: { id: number; name: string; slug: string }[];
+  created_at?: string;
 };
 
 export type Banner = {
@@ -206,7 +249,12 @@ export type Banner = {
   image: string;
   cta_label?: string | null;
   cta_url?: string | null;
+  placement?: "hero" | "side" | "tile";
+  background?: string | null;
   is_active: boolean;
+  sort_order?: number;
+  starts_at?: string | null;
+  ends_at?: string | null;
 };
 
 export type User = {
@@ -255,33 +303,148 @@ export type Cart = {
 
 export type OrderItem = {
   id: number;
+  sub_order_id?: number;
+  product_id: number;
+  product_variant_id?: number | null;
+  product_name: string;
+  variant_name?: string | null;
+  image?: string | null;
   quantity: number;
-  unit_price: number;
-  total: number;
-  product: Product;
+  unit_price: number | string;
+  total: number | string;
+  product?: Product | null;
   variant?: ProductVariant | null;
+  reviewed?: boolean;
+};
+
+export type OrderStatus =
+  | "pending"
+  | "paid"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "returned"
+  | "expired";
+
+export type ReturnRequest = {
+  id: number;
+  sub_order_id: number;
+  order_item_id?: number | null;
+  user_id: number;
+  store_id: number;
+  quantity: number;
+  reason: string;
+  reason_label?: string;
+  details?: string | null;
+  photos?: string[] | null;
+  status: "requested" | "approved" | "rejected" | "received" | "escalated" | "resolved";
+  vendor_note?: string | null;
+  admin_note?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+  item?: OrderItem | null;
+  sub_order?: SubOrder;
+  user?: User;
+  store?: Store;
 };
 
 export type SubOrder = {
   id: number;
-  store: Store;
-  status: string;
-  shipping_fee: number;
-  subtotal: number;
-  total: number;
+  order_id: number;
+  store_id: number;
+  store?: Store;
+  status: OrderStatus | string;
+  allowed_transitions?: string[];
+  shipping_fee: number | string;
+  discount?: number | string;
+  subtotal: number | string;
+  total: number | string;
+  commission?: number | string;
+  vendor_earning?: number | string;
   tracking_number?: string | null;
+  shipped_at?: string | null;
+  delivered_at?: string | null;
+  returned_at?: string | null;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
+  cancelled_by?: string | null;
+  refund_status?: "pending" | "refunded" | null;
+  created_at?: string;
   items: OrderItem[];
+  returns?: ReturnRequest[];
+  order?: Order;
+};
+
+export type ShippingSnapshot = {
+  full_name: string;
+  phone: string;
+  address_line: string;
+  city: string;
+  state: string;
+  country?: string;
+  postal_code?: string | null;
+};
+
+export type Payment = {
+  id: number;
+  reference: string;
+  amount: number | string;
+  currency: string;
+  status: string;
+  failure_reason?: string | null;
+  created_at?: string;
 };
 
 export type Order = {
   id: number;
   order_number: string;
-  status: string;
-  payment_status: string;
-  subtotal: number;
-  shipping_total: number;
-  total: number;
+  user_id?: number;
+  status: OrderStatus | string;
+  payment_status: "pending" | "paid" | "failed" | "abandoned" | "refund_due" | string;
+  subtotal: number | string;
+  shipping_total: number | string;
+  discount_total?: number | string;
+  coupon_code?: string | null;
+  total: number | string;
   created_at: string;
-  shipping_address?: Address;
+  shipping_snapshot?: ShippingSnapshot | null;
   sub_orders: SubOrder[];
+  payment?: Payment | null;
+  user?: User;
 };
+
+export type InboxMessage = {
+  id: number;
+  type: string;
+  title: string;
+  body?: string | null;
+  link?: string | null;
+  read_at?: string | null;
+  created_at: string;
+};
+
+export type Voucher = {
+  id: number;
+  code: string;
+  description?: string | null;
+  type: "percent" | "fixed" | "free_shipping";
+  value: number | string;
+  min_order?: number | string | null;
+  max_discount?: number | string | null;
+  usage_limit?: number | null;
+  per_user_limit?: number;
+  used_count?: number;
+  store_id?: number | null;
+  category_id?: number | null;
+  first_order_only?: boolean;
+  is_public?: boolean;
+  is_active: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  store?: Store | null;
+  category?: Category | null;
+  used_by_me?: number;
+};
+
+export type Paginated<T> = { data: T[]; meta: PaginationMeta & Record<string, unknown> };

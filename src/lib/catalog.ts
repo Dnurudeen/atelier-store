@@ -1,158 +1,204 @@
-import { api, type Banner, type Category, type Product, type Store } from "./api";
+import { api, type Banner, type Brand, type Category, type PaginationMeta, type Product, type Store } from "./api";
 import { demoBanners, demoCategories, demoProducts, demoStores } from "./demo-data";
 
-export type HomeRail = {
-  category?: Category;
-  store?: Store;
-  products: Product[];
-};
+/**
+ * Server-side catalogue reads for storefront pages.
+ *
+ * - Results are cached briefly (ISR) so the storefront stays fast.
+ * - Demo data is ONLY used when NEXT_PUBLIC_USE_DEMO=true. In live mode an API
+ *   failure surfaces as an empty result with `error: true`, never fake products.
+ */
+
+const USE_DEMO = process.env.NEXT_PUBLIC_USE_DEMO === "true";
+const REVALIDATE = 60;
 
 export type HomeFeed = {
   deals: Product[];
+  flash: Product[];
+  flash_ends_at?: string | null;
   sponsored: Product[];
+  top_sellers: Product[];
+  new_arrivals: Product[];
   categories: { category: Category; products: Product[] }[];
   stores: { store: Store; products: Product[] }[];
+  error?: boolean;
 };
 
-const USE_DEMO = process.env.NEXT_PUBLIC_USE_DEMO === "true";
+export type Facets = {
+  brands: (Brand & { products_count: number })[];
+  price: { min: number; max: number };
+  colors: { value: string; count: number }[];
+  sizes: { value: string; count: number }[];
+  category_counts: Record<string, number>;
+};
 
-async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
-  if (USE_DEMO) return fallback;
-  try {
-    return await fn();
-  } catch {
-    return fallback;
-  }
+export type ProductPage = {
+  data: Product[];
+  meta: PaginationMeta;
+  facets: Facets | null;
+  error?: boolean;
+};
+
+const EMPTY_META: PaginationMeta = { current_page: 1, last_page: 1, per_page: 24, total: 0 };
+
+async function read<T>(path: string): Promise<T> {
+  return api<T>(path, { token: null, revalidate: REVALIDATE });
+}
+
+function logError(scope: string, err: unknown) {
+  console.error(`[catalog] ${scope} failed:`, (err as { message?: string })?.message ?? err);
 }
 
 export async function getCategories(): Promise<Category[]> {
-  return safe(async () => {
-    const res = await api<{ data: Category[] }>("/categories");
-    return res.data;
-  }, demoCategories);
+  if (USE_DEMO) return demoCategories;
+  try {
+    return (await read<{ data: Category[] }>("/categories")).data;
+  } catch (err) {
+    logError("categories", err);
+    return [];
+  }
 }
 
 export async function getBanners(): Promise<Banner[]> {
-  return safe(async () => {
-    const res = await api<{ data: Banner[] }>("/banners");
-    return res.data;
-  }, demoBanners);
-}
-
-function uniqueByImage(products: Product[], limit: number) {
-  const seen = new Set<string>();
-  const picked: Product[] = [];
-  for (const product of products) {
-    const key = product.images?.[0]?.url || `id:${product.id}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    picked.push(product);
-    if (picked.length >= limit) break;
+  if (USE_DEMO) return demoBanners;
+  try {
+    return (await read<{ data: Banner[] }>("/banners")).data;
+  } catch (err) {
+    logError("banners", err);
+    return [];
   }
-  return picked;
 }
 
 function demoHomeFeed(): HomeFeed {
-  const deals = uniqueByImage(
-    demoProducts.filter((product) => Number(product.compare_at_price) > Number(product.price)),
-    12
-  );
-  const sponsored = uniqueByImage(
-    demoProducts.filter((product) => product.is_sponsored),
-    12
-  );
-  const categories = demoCategories
-    .map((category) => ({
-      category,
-      products: uniqueByImage(
-        demoProducts.filter((product) => product.category?.slug === category.slug),
-        8
-      ),
-    }))
-    .filter((row) => row.products.length > 0);
-  const stores = demoStores
-    .map((store) => ({
-      store,
-      products: uniqueByImage(
-        demoProducts.filter((product) => product.store?.slug === store.slug),
-        8
-      ),
-    }))
-    .filter((row) => row.products.length > 0);
-
-  return { deals, sponsored, categories, stores };
+  const deals = demoProducts.filter((p) => Number(p.compare_at_price) > Number(p.price)).slice(0, 12);
+  return {
+    deals,
+    flash: deals,
+    sponsored: demoProducts.filter((p) => p.is_sponsored).slice(0, 12),
+    top_sellers: demoProducts.slice(0, 12),
+    new_arrivals: [...demoProducts].reverse().slice(0, 12),
+    categories: demoCategories
+      .map((category) => ({ category, products: demoProducts.filter((p) => p.category?.slug === category.slug).slice(0, 10) }))
+      .filter((row) => row.products.length > 0),
+    stores: demoStores
+      .map((store) => ({ store, products: demoProducts.filter((p) => p.store?.slug === store.slug).slice(0, 8) }))
+      .filter((row) => row.products.length > 0),
+  };
 }
 
 export async function getHomeFeed(): Promise<HomeFeed> {
-  return safe(async () => {
-    const res = await api<{ data: HomeFeed }>("/home-feed");
-    return res.data;
-  }, demoHomeFeed());
+  if (USE_DEMO) return demoHomeFeed();
+  try {
+    const feed = (await read<{ data: Partial<HomeFeed> }>("/home-feed")).data;
+    return {
+      deals: feed.deals ?? [],
+      flash: feed.flash ?? [],
+      flash_ends_at: feed.flash_ends_at ?? null,
+      sponsored: feed.sponsored ?? [],
+      top_sellers: feed.top_sellers ?? [],
+      new_arrivals: feed.new_arrivals ?? [],
+      categories: feed.categories ?? [],
+      stores: feed.stores ?? [],
+    };
+  } catch (err) {
+    logError("home-feed", err);
+    return { deals: [], flash: [], sponsored: [], top_sellers: [], new_arrivals: [], categories: [], stores: [], error: true };
+  }
 }
 
-export async function getFeaturedProducts(): Promise<Product[]> {
-  return safe(async () => {
-    const res = await api<{ data: Product[] }>("/products?featured=1&per_page=8");
-    return res.data;
-  }, demoProducts.filter((p) => p.is_featured).slice(0, 8));
-}
-
-export async function getProducts(query = ""): Promise<{ data: Product[]; total: number }> {
-  return safe(async () => {
-    const res = await api<{ data: Product[]; meta: { total: number } }>(`/products${query}`);
-    return { data: res.data, total: res.meta.total };
-  }, {
-    data: demoProducts,
-    total: demoProducts.length,
-  });
+/** `query` is a URLSearchParams-style string without the leading "?". */
+export async function getProducts(query = ""): Promise<ProductPage> {
+  if (USE_DEMO) {
+    const params = new URLSearchParams(query);
+    const items = filterDemoProducts({
+      category: params.get("category") ?? undefined,
+      q: params.get("q") ?? undefined,
+      min: Number(params.get("min")) || undefined,
+      max: Number(params.get("max")) || undefined,
+      sort: params.get("sort") ?? undefined,
+    });
+    return { data: items, meta: { ...EMPTY_META, total: items.length }, facets: null };
+  }
+  try {
+    const res = await read<{ data: Product[]; meta: PaginationMeta; facets?: Facets | null }>(`/products${query ? `?${query}` : ""}`);
+    return { data: res.data, meta: res.meta, facets: res.facets ?? null };
+  } catch (err) {
+    logError("products", err);
+    return { data: [], meta: EMPTY_META, facets: null, error: true };
+  }
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
-  return safe(async () => {
-    const res = await api<{ data: Product }>(`/products/${slug}`);
-    return res.data;
-  }, demoProducts.find((p) => p.slug === slug) || null);
+  if (USE_DEMO) return demoProducts.find((p) => p.slug === slug) || null;
+  try {
+    return (await read<{ data: Product }>(`/products/${encodeURIComponent(slug)}`)).data;
+  } catch (err) {
+    if ((err as { status?: number })?.status !== 404) logError(`product ${slug}`, err);
+    return null;
+  }
+}
+
+export async function getRelated(slug: string): Promise<{ similar: Product[]; from_seller: Product[] }> {
+  if (USE_DEMO) return { similar: demoProducts.slice(0, 8), from_seller: [] };
+  try {
+    return (await read<{ data: { similar: Product[]; from_seller: Product[] } }>(`/products/${encodeURIComponent(slug)}/related`)).data;
+  } catch (err) {
+    logError(`related ${slug}`, err);
+    return { similar: [], from_seller: [] };
+  }
 }
 
 export async function getStores(): Promise<Store[]> {
-  return safe(async () => {
-    const res = await api<{ data: Store[] }>("/stores");
-    return res.data;
-  }, demoStores);
+  if (USE_DEMO) return demoStores;
+  try {
+    return (await read<{ data: Store[] }>("/stores")).data;
+  } catch (err) {
+    logError("stores", err);
+    return [];
+  }
 }
 
 export async function getStore(slug: string): Promise<Store | null> {
-  return safe(async () => {
-    const res = await api<{ data: Store }>(`/stores/${slug}`);
-    return res.data;
-  }, demoStores.find((s) => s.slug === slug) || null);
-}
-
-export async function getStoreProducts(slug: string): Promise<Product[]> {
-  return safe(async () => {
-    const res = await api<{ data: Product[] }>(`/stores/${slug}/products`);
-    return res.data;
-  }, demoProducts.filter((p) => p.store?.slug === slug));
-}
-
-export function filterDemoProducts(params: {
-  category?: string;
-  q?: string;
-  min?: number;
-  max?: number;
-  sort?: string;
-}) {
-  let items = [...demoProducts];
-  if (params.category) {
-    items = items.filter((p) => p.category?.slug === params.category);
+  if (USE_DEMO) return demoStores.find((s) => s.slug === slug) || null;
+  try {
+    return (await read<{ data: Store }>(`/stores/${encodeURIComponent(slug)}`)).data;
+  } catch (err) {
+    if ((err as { status?: number })?.status !== 404) logError(`store ${slug}`, err);
+    return null;
   }
+}
+
+export async function getStoreProducts(slug: string, query = ""): Promise<ProductPage> {
+  if (USE_DEMO) {
+    const items = demoProducts.filter((p) => p.store?.slug === slug);
+    return { data: items, meta: { ...EMPTY_META, total: items.length }, facets: null };
+  }
+  try {
+    const res = await read<{ data: Product[]; meta: PaginationMeta }>(`/stores/${encodeURIComponent(slug)}/products${query ? `?${query}` : ""}`);
+    return { data: res.data, meta: res.meta, facets: null };
+  } catch (err) {
+    logError(`store products ${slug}`, err);
+    return { data: [], meta: EMPTY_META, facets: null, error: true };
+  }
+}
+
+/** Find a category (top-level or child) and its parent in the tree. */
+export function findCategory(tree: Category[], slug: string): { category: Category; parent: Category | null } | null {
+  for (const top of tree) {
+    if (top.slug === slug) return { category: top, parent: null };
+    const child = top.children?.find((c) => c.slug === slug);
+    if (child) return { category: child, parent: top };
+  }
+  return null;
+}
+
+export function filterDemoProducts(params: { category?: string; q?: string; min?: number; max?: number; sort?: string }) {
+  let items = [...demoProducts];
+  if (params.category) items = items.filter((p) => p.category?.slug === params.category);
   if (params.q) {
     const q = params.q.toLowerCase();
     items = items.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.store?.name.toLowerCase().includes(q) ||
-        p.category?.name.toLowerCase().includes(q)
+      (p) => p.name.toLowerCase().includes(q) || p.store?.name.toLowerCase().includes(q) || p.category?.name.toLowerCase().includes(q)
     );
   }
   if (params.min) items = items.filter((p) => Number(p.price) >= params.min!);

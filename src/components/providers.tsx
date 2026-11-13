@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { UNAUTHORIZED_EVENT } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { Toaster } from "@/components/ui/toast";
 
 function AuthBootstrap({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthStore((s) => s.hydrated);
@@ -56,6 +57,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <AuthBootstrap>{children}</AuthBootstrap>
+      <Toaster />
     </QueryClientProvider>
   );
 }

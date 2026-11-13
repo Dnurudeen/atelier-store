@@ -3,8 +3,10 @@
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\VendorController;
 use App\Http\Controllers\Api\VendorProductController;
@@ -34,6 +36,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::get('/stores/{slug}/products', [CatalogController::class, 'storeProducts']);
     Route::get('/products/{slug}/related', [CatalogController::class, 'related']);
     Route::get('/search', [CatalogController::class, 'search']);
+    Route::post('/cart/quote', [CartController::class, 'quote']);
+    Route::post('/newsletter', [SupportController::class, 'newsletter'])->middleware('throttle:10,1');
+    Route::post('/contact', [SupportController::class, 'contact'])->middleware('throttle:5,1');
 
     Route::post('/webhooks/paystack', [CheckoutController::class, 'webhook'])->withoutMiddleware('throttle:api');
 
@@ -61,6 +66,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('/account/wishlist', [AccountController::class, 'wishlist']);
         Route::post('/account/wishlist', [AccountController::class, 'toggleWishlist']);
         Route::post('/account/reviews', [AccountController::class, 'review']);
+        Route::get('/account/follows', [AccountController::class, 'follows']);
+        Route::post('/account/follows', [AccountController::class, 'toggleFollow']);
         Route::match(['get', 'put'], '/account/profile', [AccountController::class, 'profile']);
 
         Route::post('/vendor/onboarding', [VendorController::class, 'onboarding']);

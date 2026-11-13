@@ -1,53 +1,46 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import { ShopCatalog } from "@/components/shop/shop-catalog";
-import { PageLoader } from "@/components/ui/page-loader";
-import { filterDemoProducts, getCategories, getProducts } from "@/lib/catalog";
+import { CatalogSkeleton, CatalogView } from "@/components/shop/catalog-view";
+import { findCategory, getCategories, getProducts } from "@/lib/catalog";
+import { apiQuery, readFilters, type RawParams } from "@/lib/catalog-query";
 
-const USE_DEMO = process.env.NEXT_PUBLIC_USE_DEMO === "true";
+type Props = { searchParams: Promise<RawParams> };
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-function first(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const { q } = readFilters(await searchParams);
+  return {
+    title: q ? `Results for “${q}”` : "Shop all products",
+    description: "Shop handmade art, fashion, ceramics, leather and home pieces from verified Nigerian makers.",
+  };
 }
 
-async function resolveProducts(searchParams: Record<string, string | string[] | undefined>) {
-  const category = first(searchParams.category) || "";
-  const q = first(searchParams.q) || "";
-  const sort = first(searchParams.sort) || "featured";
-  const min = Number(first(searchParams.min) || 0) || undefined;
-  const max = Number(first(searchParams.max) || 0) || undefined;
+async function ShopContent({ searchParams }: Props) {
+  const raw = await searchParams;
+  const filters = readFilters(raw);
+  const [categories, result] = await Promise.all([getCategories(), getProducts(apiQuery(filters, { facets: "1" }))]);
+  const found = filters.category ? findCategory(categories, filters.category) : null;
+  const query = new URLSearchParams(filters as Record<string, string>).toString();
 
-  if (USE_DEMO) {
-    const data = filterDemoProducts({ category, q, min, max, sort });
-    return { data, total: data.length };
-  }
+  const title = filters.q ? `Results for “${filters.q}”` : found ? found.category.name : "All products";
 
-  const query = new URLSearchParams();
-  if (category) query.set("category", category);
-  if (q) query.set("q", q);
-  if (sort) query.set("sort", sort);
-  if (min) query.set("min", String(min));
-  if (max) query.set("max", String(max));
-  query.set("per_page", "24");
-  const qs = query.toString();
-  return getProducts(qs ? `?${qs}` : "");
-}
-
-async function ShopPageContent({ searchParams }: { searchParams: SearchParams }) {
-  const resolved = await searchParams;
-  const [categories, { data: products, total }] = await Promise.all([
-    getCategories(),
-    resolveProducts(resolved),
-  ]);
-
-  return <ShopCatalog categories={categories} products={products} total={total} />;
-}
-
-export default function ShopPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <Suspense fallback={<PageLoader label="Opening the shop" />}>
-      <ShopPageContent searchParams={searchParams} />
+    <CatalogView
+      title={title}
+      crumbs={filters.q ? [{ label: "Search", href: "/shop" }, { label: filters.q }] : [{ label: "All products" }]}
+      result={result}
+      categories={categories}
+      current={found?.category}
+      parent={found?.parent}
+      basePath="/shop"
+      query={query}
+    />
+  );
+}
+
+export default function ShopPage(props: Props) {
+  return (
+    <Suspense fallback={<CatalogSkeleton />}>
+      <ShopContent {...props} />
     </Suspense>
   );
 }

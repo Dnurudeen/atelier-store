@@ -1,283 +1,350 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, CheckCircle2, CreditCard, Lock, MapPin, Truck } from "lucide-react";
+import { AddressForm } from "@/components/account/address-form";
+import { BrandLogo } from "@/components/brand/logo";
+import { AppImage } from "@/components/ui/app-image";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PageFade } from "@/components/motion/page-fade";
 import { PageLoader } from "@/components/ui/page-loader";
-import { useCartStore } from "@/store/cart";
+import { api, errorMessage, type Address } from "@/lib/api";
+import { ISSUE_TEXT, mapCartToCheckoutPayload, useCartQuote } from "@/lib/checkout";
+import { formatDeliveryRange } from "@/lib/nigeria";
+import { cn, formatNaira } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
-import { api } from "@/lib/api";
-import { estimateCartShipping, mapCartToCheckoutPayload } from "@/lib/checkout";
-import { formatNaira, cn } from "@/lib/utils";
-import { Check, MapPin, Package, CreditCard } from "lucide-react";
+import { useCartStore } from "@/store/cart";
 
-const STEPS = [
-  { id: 1, label: "Address", icon: MapPin },
-  { id: 2, label: "Delivery", icon: Package },
-  { id: 3, label: "Payment", icon: CreditCard },
-] as const;
+type CheckoutResponse = { data: { authorization_url: string | null; reference: string; demo?: boolean } };
 
-type CheckoutResponse = {
-  data: {
-    authorization_url?: string | null;
-    reference: string;
-    demo?: boolean;
-    order?: { order_number?: string; total?: number | string };
-  };
-};
+const PENDING_KEY = "atelier-pending-checkout";
 
-export default function CheckoutPage() {
+function Step({ n, title, done, children, action }: { n: number; title: string; done?: boolean; children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <section className="rounded-md bg-white">
+      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="flex items-center gap-2 font-sans text-[13px] font-bold tracking-wide uppercase">
+          {done ? <CheckCircle2 size={18} className="text-emerald-600" /> : <span className="flex h-5 w-5 items-center justify-center rounded-full bg-border text-[11px]">{n}</span>}
+          {title}
+        </h2>
+        {action}
+      </header>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
+function CheckoutInner() {
   const router = useRouter();
-  const items = useCartStore((s) => s.items);
-  const subtotal = useCartStore((s) => s.subtotal());
-  const clear = useCartStore((s) => s.clear);
-  const user = useAuthStore((s) => s.user);
-  const token = useAuthStore((s) => s.token);
+  const params = useSearchParams();
+  const client = useQueryClient();
   const hydrated = useAuthStore((s) => s.hydrated);
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+  const items = useCartStore((s) => s.items);
 
-  const [step, setStep] = useState(1);
+  const [couponInput, setCouponInput] = useState(params.get("voucher") ?? "");
+  const [coupon, setCoupon] = useState<string | null>(params.get("voucher"));
+  const [addressId, setAddressId] = useState<number | null>(null);
+  const [editingAddress, setEditingAddress] = useState<"new" | "pick" | null>(null);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
-  const [address, setAddress] = useState({
-    full_name: "",
-    phone: "",
-    address_line: "",
-    city: "Lagos",
-    state: "Lagos",
-    country: "Nigeria",
+
+  const { data: quote, isFetching: quoting } = useCartQuote(coupon);
+  const { data: addresses, isLoading: loadingAddresses } = useQuery({
+    queryKey: ["addresses", token],
+    queryFn: async () => (await api<{ data: Address[] }>("/account/addresses")).data,
+    enabled: Boolean(token),
   });
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (!token || !user) {
-      router.replace(`/login?next=${encodeURIComponent("/checkout")}`);
-    } else {
-      setAddress((a) => ({
-        ...a,
-        full_name: a.full_name || user.name || "",
-      }));
+    if (hydrated && !token) router.replace("/login?next=/checkout");
+  }, [hydrated, token, router]);
+
+  const selected = useMemo(() => {
+    if (!addresses?.length) return null;
+    return addresses.find((a) => a.id === addressId) ?? addresses.find((a) => a.is_default) ?? addresses[0];
+  }, [addresses, addressId]);
+
+  const showAddressForm = editingAddress === "new" || (!loadingAddresses && addresses?.length === 0);
+  const blocking = quote?.lines.some((l) => l.issue && l.issue !== "limited_stock");
+
+  async function placeOrder() {
+    if (!selected) {
+      setError("Add a delivery address first.");
+      return;
     }
-  }, [hydrated, token, user, router]);
-
-  const shipping = estimateCartShipping(items);
-  const total = subtotal + shipping;
-
-  const storeCount = useMemo(() => {
-    const ids = new Set(items.map((i) => i.product.store?.id).filter(Boolean));
-    return ids.size;
-  }, [items]);
-
-  async function handlePay() {
     setPaying(true);
     setError("");
     try {
-      const callbackUrl =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/checkout/success`
-          : undefined;
-      const payload = mapCartToCheckoutPayload(items, address, callbackUrl);
-      const res = await api<CheckoutResponse>("/checkout", {
-        method: "POST",
-        body: payload,
-      });
-
-      const url = res.data.authorization_url;
-      if (!url) {
-        throw new Error("No payment URL returned");
-      }
-
-      clear();
-      window.location.href = url;
+      const callbackUrl = `${window.location.origin}/checkout/success`;
+      const payload = mapCartToCheckoutPayload(items, null, callbackUrl, { addressId: selected.id, couponCode: quote?.voucher ? coupon : null });
+      const res = await api<CheckoutResponse>("/checkout", { method: "POST", body: payload });
+      if (!res.data.authorization_url) throw { message: "Payment could not be started. Please try again." };
+      // The cart is cleared only after the payment is confirmed (see /checkout/success).
+      sessionStorage.setItem(PENDING_KEY, res.data.reference);
+      window.location.href = res.data.authorization_url;
     } catch (err) {
-      setError((err as { message?: string })?.message || "Checkout failed. Please try again.");
+      setError(errorMessage(err, "Checkout failed. Please try again."));
+      void client.invalidateQueries({ queryKey: ["cart-quote"] });
       setPaying(false);
     }
   }
 
-  function onAddressSubmit(e: FormEvent) {
-    e.preventDefault();
-    setStep(2);
-  }
-
-  if (!hydrated || !token) {
-    return <PageLoader label="Checking your session" />;
-  }
+  if (!hydrated || !token) return <PageLoader label="Checking your session" />;
 
   if (items.length === 0 && !paying) {
     return (
       <div className="container-atelier py-20 text-center">
         <h1 className="font-display text-3xl">Your cart is empty</h1>
-        <p className="mt-2 text-muted">Add pieces from the shop before checking out.</p>
-        <Button className="mt-6" onClick={() => router.push("/shop")}>
-          Browse shop
-        </Button>
+        <p className="mt-2 text-muted">Add products to your cart before checking out.</p>
+        <Link href="/shop" className="mt-6 inline-flex rounded-md bg-crimson px-5 py-3 text-sm font-semibold text-white">
+          Continue shopping
+        </Link>
       </div>
     );
   }
 
   return (
-    <PageFade className="container-atelier py-10 md:py-14">
-      <p className="text-xs font-medium tracking-[0.2em] text-crimson uppercase">Checkout</p>
-      <h1 className="mt-2 font-display text-3xl md:text-4xl">Complete your order</h1>
+    <div className="min-h-screen bg-[var(--page-bg)] pb-28 md:pb-12">
+      <header className="border-b border-border bg-white">
+        <div className="container-atelier flex h-14 items-center justify-between">
+          <BrandLogo />
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-emerald-700">
+            <Lock size={14} /> Secure checkout
+          </p>
+          <Link href="/cart" className="hidden text-[13px] font-semibold text-burgundy hover:underline sm:block">
+            Back to cart
+          </Link>
+        </div>
+      </header>
 
-      <ol className="mt-8 flex flex-wrap gap-3">
-        {STEPS.map((s) => {
-          const active = step === s.id;
-          const done = step > s.id;
-          const Icon = s.icon;
-          return (
-            <li
-              key={s.id}
-              className={cn(
-                "flex items-center gap-2 rounded-full border px-4 py-2 text-sm",
-                active && "border-burgundy bg-burgundy/5 text-burgundy",
-                done && "border-emerald-200 bg-emerald-50 text-emerald-900",
-                !active && !done && "border-border text-muted"
-              )}
-            >
-              {done ? <Check size={14} /> : <Icon size={14} />}
-              {s.label}
-            </li>
-          );
-        })}
-      </ol>
-
-      <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_360px]">
-        <div>
-          {step === 1 && (
-            <form onSubmit={onAddressSubmit} className="space-y-4 rounded-2xl border border-border bg-white p-6">
-              <h2 className="font-display text-xl">Delivery address</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Full name"
-                  value={address.full_name}
-                  onChange={(e) => setAddress((a) => ({ ...a, full_name: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="Phone"
-                  value={address.phone}
-                  onChange={(e) => setAddress((a) => ({ ...a, phone: e.target.value }))}
-                  required
-                />
-              </div>
-              <Input
-                label="Address"
-                value={address.address_line}
-                onChange={(e) => setAddress((a) => ({ ...a, address_line: e.target.value }))}
-                required
+      <div className="container-atelier grid gap-3 pt-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-3">
+          <Step
+            n={1}
+            title="Customer address"
+            done={Boolean(selected) && !editingAddress}
+            action={
+              selected && !editingAddress ? (
+                <button type="button" onClick={() => setEditingAddress("pick")} className="text-[13px] font-semibold text-crimson hover:underline">
+                  Change
+                </button>
+              ) : null
+            }
+          >
+            {loadingAddresses ? (
+              <div className="skeleton h-16 rounded-md" />
+            ) : showAddressForm ? (
+              <AddressForm
+                initial={{ full_name: user?.name ?? "", phone: user?.phone ?? "", is_default: !addresses?.length }}
+                submitLabel="Save and use this address"
+                onCancel={addresses?.length ? () => setEditingAddress(null) : undefined}
+                onSaved={(a) => {
+                  void client.invalidateQueries({ queryKey: ["addresses"] });
+                  setAddressId(a.id);
+                  setEditingAddress(null);
+                }}
               />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="City"
-                  value={address.city}
-                  onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="State"
-                  value={address.state}
-                  onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))}
-                  required
-                />
+            ) : editingAddress === "pick" ? (
+              <div className="space-y-2">
+                {addresses!.map((a) => (
+                  <label key={a.id} className={cn("flex cursor-pointer gap-3 rounded-md border p-3 text-sm", selected?.id === a.id ? "border-crimson bg-crimson/5" : "border-border")}>
+                    <input type="radio" name="address" checked={selected?.id === a.id} onChange={() => setAddressId(a.id)} className="mt-1 accent-[var(--crimson)]" />
+                    <span>
+                      <span className="font-semibold">{a.full_name}</span> {a.is_default && <span className="ml-1 rounded bg-surface px-1.5 text-[11px] text-muted">Default</span>}
+                      <span className="block text-muted">
+                        {a.address_line}, {a.city}, {a.state}
+                      </span>
+                      <span className="block text-muted">{a.phone}</span>
+                    </span>
+                  </label>
+                ))}
+                <div className="flex gap-2 pt-1">
+                  <Button onClick={() => setEditingAddress(null)}>Use selected address</Button>
+                  <Button variant="outline" onClick={() => setEditingAddress("new")}>
+                    Add a new address
+                  </Button>
+                </div>
               </div>
-              <Button type="submit">Continue to delivery</Button>
-            </form>
-          )}
+            ) : (
+              selected && (
+                <div className="flex gap-3 text-sm">
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-burgundy" />
+                  <div>
+                    <p className="font-semibold">{selected.full_name}</p>
+                    <p className="text-muted">
+                      {selected.address_line}, {selected.city}, {selected.state}
+                    </p>
+                    <p className="text-muted">{selected.phone}</p>
+                  </div>
+                </div>
+              )
+            )}
+          </Step>
 
-          {step === 2 && (
-            <div className="space-y-4 rounded-2xl border border-border bg-white p-6">
-              <h2 className="font-display text-xl">Delivery summary</h2>
-              <p className="text-sm text-muted">
-                Ships to {address.address_line}, {address.city}, {address.state}
-              </p>
-              <div className="rounded-xl bg-surface-warm p-4 text-sm">
-                <p className="font-medium text-foreground">
-                  {storeCount > 1
-                    ? `${storeCount} makers. Items may arrive in separate parcels`
-                    : "Single maker. One parcel"}
+          <Step n={2} title="Delivery details" done={Boolean(selected && quote && !blocking)}>
+            {!quote ? (
+              <div className="skeleton h-24 rounded-md" />
+            ) : (
+              <div className="space-y-3">
+                <p className="flex items-start gap-2 rounded-md bg-surface p-3 text-[13px]">
+                  <Truck size={18} className="shrink-0 text-burgundy" />
+                  <span>
+                    <span className="font-semibold">Door delivery.</span> Each seller ships separately, so you may receive {quote.stores.length > 1 ? `${quote.stores.length} packages` : "your package"} on different days.
+                  </span>
                 </p>
-                <p className="mt-2 text-muted">
-                  Estimated delivery: 3 to 7 business days within Nigeria. Rural areas may take longer.
-                </p>
-                <p className="mt-2 font-medium text-burgundy">Shipping: {formatNaira(shipping)}</p>
+                {quote.stores.map((s, i) => {
+                  const lines = quote.lines.filter((l) => l.store_id === s.store.id && l.product);
+                  return (
+                    <div key={s.store.id} className="rounded-md border border-border">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2 text-[13px]">
+                        <p className="font-semibold">
+                          Shipment {i + 1}/{quote.stores.length} <span className="font-normal text-muted">· Fulfilled by {s.store.name}</span>
+                        </p>
+                        <p className="text-muted">
+                          Delivery {selected ? <span className="font-semibold text-foreground">{formatDeliveryRange(s.store.location, selected.state)}</span> : "—"} ·{" "}
+                          {s.shipping_fee > 0 ? formatNaira(s.shipping_fee) : "Free"}
+                        </p>
+                      </div>
+                      <ul className="divide-y divide-border">
+                        {lines.map((l) => (
+                          <li key={l.key} className="flex items-center gap-3 px-3 py-2">
+                            <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-surface">
+                              <AppImage src={l.product!.images?.[0]?.url} alt="" fill sizes="48px" frameClassName="absolute inset-0" />
+                            </span>
+                            <span className="min-w-0 flex-1 text-[13px]">
+                              <span className="line-clamp-1">{l.product!.name}</span>
+                              <span className="text-muted">
+                                {l.variant ? `${l.variant.name} · ` : ""}QTY: {l.quantity}
+                              </span>
+                            </span>
+                            <span className="text-[13px] font-semibold">{formatNaira(l.total)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+                {quote.lines.filter((l) => l.issue).map((l) => (
+                  <p key={l.key} className="flex items-center gap-1.5 text-[13px] text-crimson">
+                    <AlertTriangle size={14} /> {l.product?.name ?? "An item"}: {ISSUE_TEXT[l.issue!]}{" "}
+                    {l.issue !== "limited_stock" && (
+                      <Link href="/cart" className="font-semibold underline">
+                        Fix in cart
+                      </Link>
+                    )}
+                  </p>
+                ))}
               </div>
-              <div className="flex gap-3">
-                <Button variant="outline" type="button" onClick={() => setStep(1)}>
-                  Back
-                </Button>
-                <Button type="button" onClick={() => setStep(3)}>
-                  Continue to payment
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
+          </Step>
 
-          {step === 3 && (
-            <div className="space-y-4 rounded-2xl border border-border bg-white p-6">
-              <h2 className="font-display text-xl">Payment</h2>
-              <p className="text-sm text-muted">
-                You will complete payment securely with Paystack (card, bank transfer, or USSD). If Paystack
-                keys are not configured locally, demo checkout opens the success page instead.
-              </p>
-              {error && <p className="text-sm text-crimson">{error}</p>}
-              <div className="flex gap-3 pt-2">
-                <Button variant="outline" type="button" onClick={() => setStep(2)}>
-                  Back
-                </Button>
-                <Button type="button" loading={paying} onClick={() => void handlePay()}>
-                  Pay {formatNaira(total)}
-                </Button>
-              </div>
-            </div>
-          )}
+          <Step n={3} title="Payment method" done>
+            <label className="flex items-start gap-3 rounded-md border border-crimson bg-crimson/5 p-3 text-sm">
+              <input type="radio" checked readOnly className="mt-1 accent-[var(--crimson)]" />
+              <span>
+                <span className="flex items-center gap-1.5 font-semibold">
+                  <CreditCard size={16} /> Pay now with Paystack
+                </span>
+                <span className="block text-[13px] text-muted">Card, bank transfer or USSD. You&apos;ll be redirected to Paystack&apos;s secure page.</span>
+              </span>
+            </label>
+          </Step>
         </div>
 
-        <aside className="h-fit rounded-2xl border border-border bg-white p-6 shadow-sm">
-          <h2 className="font-display text-lg">Order summary</h2>
-          <ul className="mt-4 space-y-4">
-            {items.map((item) => {
-              const price = item.variant?.price ?? item.product.price;
-              const img = item.product.images?.[0]?.url;
-              return (
-                <li key={item.key} className="flex gap-3">
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-surface">
-                    {img ? <Image src={img} alt="" fill className="object-cover" sizes="64px" /> : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{item.product.name}</p>
-                    <p className="text-xs text-muted">Qty {item.quantity}</p>
-                    <p className="text-sm font-semibold text-burgundy">
-                      {formatNaira(Number(price) * item.quantity)}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <dl className="mt-6 space-y-2 border-t border-border pt-4 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-muted">Subtotal</dt>
-              <dd>{formatNaira(subtotal)}</dd>
+        <aside className="lg:sticky lg:top-4 lg:self-start">
+          <section className="rounded-md bg-white">
+            <h2 className="border-b border-border px-4 py-3 text-[13px] font-bold tracking-wide uppercase">Order summary</h2>
+            <div className="space-y-2 px-4 py-3 text-sm">
+              <div className="flex justify-between">
+                <span>Item&apos;s total ({items.reduce((s, i) => s + i.quantity, 0)})</span>
+                <span>{formatNaira(quote?.subtotal ?? 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery fees</span>
+                <span>{formatNaira(quote?.shipping_total ?? 0)}</span>
+              </div>
+              {quote && quote.discount_total > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Voucher {quote.voucher?.code}</span>
+                  <span>-{formatNaira(quote.discount_total)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
+                <span>Total</span>
+                <span>{formatNaira(quote?.total ?? 0)}</span>
+              </div>
+
+              <form
+                className="flex gap-2 pt-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setCoupon(couponInput.trim() || null);
+                }}
+              >
+                <input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  placeholder="Enter voucher code"
+                  aria-label="Voucher code"
+                  className="h-9 min-w-0 flex-1 rounded-md border border-border px-2.5 text-[13px] uppercase outline-none focus:border-burgundy"
+                />
+                <button className="h-9 rounded-md border border-crimson px-3 text-[12px] font-bold text-crimson uppercase hover:bg-crimson hover:text-white">Apply</button>
+              </form>
+              {coupon && quote?.voucher_error && <p className="text-[12px] text-crimson">{quote.voucher_error}</p>}
+              {coupon && quote?.voucher && (
+                <p className="flex items-center justify-between text-[12px] text-emerald-700">
+                  Voucher applied
+                  <button
+                    type="button"
+                    className="font-semibold text-crimson"
+                    onClick={() => {
+                      setCoupon(null);
+                      setCouponInput("");
+                    }}
+                  >
+                    Remove
+                  </button>
+                </p>
+              )}
             </div>
-            <div className="flex justify-between">
-              <dt className="text-muted">Shipping</dt>
-              <dd>{formatNaira(shipping)}</dd>
+            <div className="border-t border-border p-3">
+              {error && <p className="mb-2 rounded-md bg-crimson/5 px-3 py-2 text-[13px] text-crimson">{error}</p>}
+              <Button size="lg" className="hidden w-full uppercase md:flex" onClick={() => void placeOrder()} loading={paying} disabled={!selected || !quote || Boolean(blocking) || quoting || Boolean(editingAddress)}>
+                Confirm order
+              </Button>
+              <p className="mt-2 text-center text-[11px] text-muted">
+                By placing your order you agree to our{" "}
+                <Link href="/terms" className="underline">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link href="/returns" className="underline">
+                  Return Policy
+                </Link>
+                .
+              </p>
             </div>
-            <div className="flex justify-between text-base font-semibold">
-              <dt>Total</dt>
-              <dd className="text-burgundy">{formatNaira(total)}</dd>
-            </div>
-          </dl>
-          <Link href="/shop" className="mt-4 block text-center text-sm text-muted hover:text-burgundy">
-            Continue shopping
-          </Link>
+          </section>
         </aside>
       </div>
-    </PageFade>
+
+      <div className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white p-2.5 md:hidden">
+        <Button size="lg" className="h-12 w-full uppercase" onClick={() => void placeOrder()} loading={paying} disabled={!selected || !quote || Boolean(blocking) || quoting || Boolean(editingAddress)}>
+          Confirm order · {formatNaira(quote?.total ?? 0)}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<PageLoader label="Preparing checkout" />}>
+      <CheckoutInner />
+    </Suspense>
   );
 }

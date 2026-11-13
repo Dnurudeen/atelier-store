@@ -1,85 +1,164 @@
-import { Suspense } from "react";
+"use client";
+
 import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { Mail } from "lucide-react";
 import { BrandLogo } from "@/components/brand/logo";
 import { CurrentYear } from "@/components/layout/current-year";
+import { api, errorMessage, fieldErrors } from "@/lib/api";
+import { useCategories } from "@/lib/hooks";
 
 const columns = [
   {
-    title: "Shop",
+    title: "Need help?",
     links: [
-      { href: "/shop?category=fine-art", label: "Fine Art" },
-      { href: "/shop?category=fashion", label: "Fashion" },
-      { href: "/shop?category=ceramics", label: "Ceramics" },
-      { href: "/shop?category=sculpture", label: "Sculpture" },
-      { href: "/shop?category=leatherwork", label: "Leatherwork" },
-      { href: "/shop?category=home-decor", label: "Home Decor" },
+      { href: "/help", label: "Help Center" },
+      { href: "/contact", label: "Contact us" },
+      { href: "/account/orders", label: "Track your order" },
+      { href: "/returns", label: "Returns & refunds" },
+      { href: "/shipping", label: "Delivery options" },
     ],
   },
   {
-    title: "For Makers",
+    title: "About Atelier",
     links: [
-      { href: "/become-a-vendor", label: "Become a Vendor" },
-      { href: "/vendor", label: "Vendor Dashboard" },
-      { href: "/makers", label: "Meet the Makers" },
+      { href: "/about", label: "About us" },
+      { href: "/makers", label: "Official stores" },
+      { href: "/terms", label: "Terms & conditions" },
+      { href: "/privacy", label: "Privacy policy" },
     ],
   },
   {
-    title: "Company",
+    title: "Make money with Atelier",
     links: [
-      { href: "/about", label: "About Atelier" },
-      { href: "/contact", label: "Contact" },
-      { href: "/account", label: "My Account" },
-      { href: "/shop", label: "All Products" },
+      { href: "/become-a-vendor", label: "Sell on Atelier" },
+      { href: "/register?as=vendor", label: "Open a store" },
+      { href: "/vendor", label: "Seller Center" },
+      { href: "/help#selling", label: "Seller FAQ" },
     ],
   },
 ];
 
-export function Footer() {
-  return (
-    <footer className="mt-auto bg-burgundy text-white pb-mobile-tab">
-      <div className="container-atelier grid gap-8 py-10 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-10 md:py-14">
-        <div className="space-y-5">
-          <BrandLogo variant="footer" href="/" />
-          <p className="max-w-sm text-sm leading-relaxed text-white/75">
-            Nigeria&apos;s leading handcrafted marketplace for painters,
-            designers, and artisans who want to sell with confidence.
-          </p>
-          <p className="text-xs tracking-widest text-white/50 uppercase">
-            www.atelierstore.studio
-          </p>
-        </div>
+function Newsletter() {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  const [loading, setLoading] = useState(false);
 
-        {columns.map((col) => (
-          <div key={col.title}>
-            <h4 className="mb-4 font-sans text-sm font-semibold tracking-wide text-white">
-              {col.title}
-            </h4>
-            <ul className="space-y-2.5">
-              {col.links.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/70 transition hover:text-white"
-                  >
-                    {link.label}
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setState(null);
+    try {
+      const res = await api<{ message: string }>("/newsletter", { method: "POST", body: { email }, token: null });
+      setState({ tone: "ok", text: res.message });
+      setEmail("");
+    } catch (err) {
+      setState({ tone: "error", text: fieldErrors(err).email || errorMessage(err, "Could not subscribe right now.") });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-[#2b2b2b] text-white">
+      <div className="container-atelier flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3">
+          <BrandLogo variant="footer" href="/" />
+        </div>
+        <form onSubmit={submit} className="w-full max-w-xl">
+          <p className="text-[12px] font-bold tracking-wide uppercase">New to Atelier?</p>
+          <p className="text-[12px] text-white/70">Subscribe to our newsletter to get updates on our latest offers!</p>
+          <div className="mt-2 flex gap-2">
+            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md bg-white px-3 text-foreground">
+              <Mail size={16} className="text-muted" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter E-mail Address"
+                aria-label="Email address"
+                className="w-full bg-transparent text-sm outline-none"
+              />
+            </label>
+            <button disabled={loading} className="h-10 rounded-md bg-crimson px-4 text-[13px] font-bold uppercase hover:bg-crimson-hover disabled:opacity-60">
+              Subscribe
+            </button>
+          </div>
+          {state && <p className={`mt-1.5 text-[12px] ${state.tone === "ok" ? "text-emerald-300" : "text-red-300"}`}>{state.text}</p>}
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function Footer() {
+  const { data: categories = [] } = useCategories();
+
+  return (
+    <footer className="mt-auto">
+      <Newsletter />
+      <div className="bg-[#313133] text-white/85">
+        <div className="container-atelier grid grid-cols-2 gap-8 py-10 text-[13px] md:grid-cols-4">
+          {columns.map((col) => (
+            <div key={col.title}>
+              <h3 className="mb-3 font-sans text-[13px] font-bold tracking-normal text-white uppercase">{col.title}</h3>
+              <ul className="space-y-2">
+                {col.links.map((l) => (
+                  <li key={l.label}>
+                    <Link href={l.href} className="hover:text-white hover:underline">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <div>
+            <h3 className="mb-3 font-sans text-[13px] font-bold tracking-normal text-white uppercase">Shop categories</h3>
+            <ul className="space-y-2">
+              {categories.slice(0, 7).map((c) => (
+                <li key={c.id}>
+                  <Link href={`/category/${c.slug}`} className="hover:text-white hover:underline">
+                    {c.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="border-t border-white/10">
-        <div className="container-atelier flex flex-col gap-3 py-5 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            ©{" "}
-            <Suspense fallback={2026}>
-              <CurrentYear />
-            </Suspense>{" "}
-            Atelier Nigeria. All rights reserved.
-          </p>
-          <p>Handcrafted excellence for creators across Nigeria.</p>
+        <div className="border-t border-white/10">
+          <div className="container-atelier flex flex-col gap-4 py-5 text-[12px] md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="mb-2 font-bold tracking-wide text-white uppercase">Payment methods &amp; delivery partners</p>
+              <div className="flex flex-wrap gap-2">
+                {["Paystack", "Visa", "Mastercard", "Verve", "Bank transfer", "USSD"].map((m) => (
+                  <span key={m} className="rounded bg-white px-2 py-1 text-[11px] font-bold text-foreground">
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 font-bold tracking-wide text-white uppercase">Join us on</p>
+              <div className="flex gap-2">
+                {[
+                  { label: "Instagram", short: "IG", href: "https://instagram.com" },
+                  { label: "Facebook", short: "f", href: "https://facebook.com" },
+                  { label: "X", short: "X", href: "https://x.com" },
+                  { label: "TikTok", short: "TT", href: "https://tiktok.com" },
+                ].map((s) => (
+                  <a key={s.label} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold hover:bg-crimson">
+                    {s.short}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-burgundy-deep py-3 text-center text-[11px] text-white/70">
+          © <CurrentYear /> Atelier Nigeria. All rights reserved.
         </div>
       </div>
     </footer>

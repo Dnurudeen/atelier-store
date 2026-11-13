@@ -133,6 +133,38 @@ class AccountController extends Controller
         return response()->json(['data' => ['wishlisted' => true]]);
     }
 
+    public function follows(Request $request)
+    {
+        $stores = $request->user()->followedStores()
+            ->where('status', 'approved')
+            ->withCount(['products' => fn ($q) => $q->where('status', 'published'), 'followers'])
+            ->latest('store_follows.created_at')
+            ->get();
+
+        return response()->json(['data' => $stores]);
+    }
+
+    public function toggleFollow(Request $request)
+    {
+        $data = $request->validate(['store_id' => ['required', 'integer', 'exists:stores,id']]);
+        $store = \App\Models\Store::where('status', 'approved')->findOrFail($data['store_id']);
+        $user = $request->user();
+
+        $following = $user->followedStores()->where('stores.id', $store->id)->exists();
+        if ($following) {
+            $user->followedStores()->detach($store->id);
+        } else {
+            $user->followedStores()->attach($store->id);
+        }
+
+        return response()->json([
+            'data' => [
+                'following' => ! $following,
+                'followers_count' => $store->followers()->count(),
+            ],
+        ]);
+    }
+
     public function review(Request $request)
     {
         $data = $request->validate([

@@ -1,73 +1,123 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageFade } from "@/components/motion/page-fade";
 import { PageLoader } from "@/components/ui/page-loader";
-import { api, type Order } from "@/lib/api";
+import { api, errorMessage, type Order } from "@/lib/api";
 import { formatNaira } from "@/lib/utils";
-import { CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
+import { useCartStore } from "@/store/cart";
+
+const PENDING_KEY = "atelier-pending-checkout";
 
 function SuccessContent() {
   const params = useSearchParams();
-  const reference = params.get("reference") || "";
+  const reference = params.get("reference") || params.get("trxref") || "";
   const token = useAuthStore((s) => s.token);
   const hydrated = useAuthStore((s) => s.hydrated);
+  const clearCart = useCartStore((s) => s.clear);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     if (!hydrated) return;
-    if (!reference) {
-      setError("Missing payment reference.");
+    let cancelled = false;
+    let timer = 0;
+    let attempts = 0;
+
+    async function verify() {
+      try {
+        const res = await api<{ data: Order }>(`/payments/verify/${encodeURIComponent(reference)}`);
+        if (cancelled) return;
+        setOrder(res.data);
+        setError("");
+        if (res.data.payment_status === "paid") {
+          clearCart();
+          sessionStorage.removeItem(PENDING_KEY);
+        } else if (res.data.payment_status === "pending" && attempts < 4) {
+          // Paystack can take a few seconds to confirm bank transfers.
+          attempts += 1;
+          timer = window.setTimeout(() => void verify(), 3000);
+          return;
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setError(errorMessage(err, "We couldn't confirm this payment."));
+      }
       setLoading(false);
-      return;
-    }
-    if (!token) {
-      setError("Sign in to confirm your payment.");
-      setLoading(false);
-      return;
     }
 
-    void api<{ data: Order }>(`/payments/verify/${encodeURIComponent(reference)}`)
-      .then((res) => setOrder(res.data))
-      .catch((err) => setError(err?.message || "Unable to verify payment"))
-      .finally(() => setLoading(false));
-  }, [hydrated, reference, token]);
+    timer = window.setTimeout(() => {
+      if (!reference || !token) {
+        setError(!reference ? "This page needs a payment reference." : "Sign in to see your order.");
+        setLoading(false);
+        return;
+      }
+      void verify();
+    }, 0);
 
-  if (loading) {
-    return <PageLoader label="Confirming your payment" />;
-  }
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [hydrated, reference, token, clearCart]);
+
+  if (loading) return <PageLoader label="Confirming your payment" />;
+
+  const status = order?.payment_status;
+  const paid = status === "paid";
+  const pending = status === "pending";
+
+  const Icon = paid ? CheckCircle2 : pending ? Clock : XCircle;
+  const tone = paid ? "text-emerald-600" : pending ? "text-amber-500" : "text-crimson";
+  const title = paid ? "Thank you for your order!" : pending ? "We're confirming your payment" : "Payment not completed";
+  const message = paid
+    ? "We've emailed your receipt. Sellers are preparing your items and you'll get updates as each package ships."
+    : pending
+      ? "This usually takes a moment. You can safely leave this page — your order will update automatically."
+      : error || "Your card was not charged, or the payment was cancelled. Your cart is still saved, so you can try again.";
 
   return (
-    <PageFade className="container-atelier flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
-      <CheckCircle2 className="text-emerald-600" size={56} strokeWidth={1.5} />
-      <p className="mt-6 text-xs font-medium tracking-[0.2em] text-crimson uppercase">Thank you</p>
-      <h1 className="mt-2 font-display text-3xl md:text-4xl">
-        {order?.payment_status === "paid" ? "Your order is confirmed" : "Payment received"}
-      </h1>
-      {error ? (
-        <p className="mt-3 max-w-md text-crimson">{error}</p>
-      ) : (
-        <p className="mt-3 max-w-md text-muted">
-          Reference <strong className="text-foreground">{order?.order_number || reference}</strong>
-          {order ? ` · ${formatNaira(order.total)}` : ""}. Makers will prepare your pieces for dispatch
-          shortly.
-        </p>
-      )}
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Button variant="secondary" onClick={() => (window.location.href = "/account/orders")}>
-          View orders
-        </Button>
-        <Link href="/shop">
-          <Button variant="outline">Continue shopping</Button>
-        </Link>
+    <div className="bg-[var(--page-bg)] py-8 md:py-14">
+      <div className="container-atelier max-w-xl">
+        <div className="rounded-md bg-white p-6 text-center md:p-10">
+          <Icon className={`mx-auto ${tone}`} size={60} strokeWidth={1.5} />
+          <h1 className="mt-4 font-display text-2xl text-burgundy md:text-3xl">{title}</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted">{message}</p>
+
+          {order && (
+            <dl className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-y-2 rounded-md bg-surface p-4 text-left text-sm">
+              <dt className="text-muted">Order number</dt>
+              <dd className="text-right font-semibold">{order.order_number}</dd>
+              <dt className="text-muted">Total</dt>
+              <dd className="text-right font-semibold">{formatNaira(order.total)}</dd>
+              <dt className="text-muted">Packages</dt>
+              <dd className="text-right font-semibold">{order.sub_orders?.length ?? 1}</dd>
+            </dl>
+          )}
+
+          <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+            {order && (paid || pending) ? (
+              <Link href={`/account/orders/${order.id}`}>
+                <Button className="w-full sm:w-auto">Track my order</Button>
+              </Link>
+            ) : (
+              <Link href="/cart">
+                <Button className="w-full sm:w-auto">Return to cart</Button>
+              </Link>
+            )}
+            <Link href="/shop">
+              <Button variant="outline" className="w-full sm:w-auto">
+                Continue shopping
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
-    </PageFade>
+    </div>
   );
 }
 

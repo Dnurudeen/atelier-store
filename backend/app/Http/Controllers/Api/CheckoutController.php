@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\SubOrder;
 use App\Services\OrderService;
 use App\Services\PaystackService;
+use App\Services\VoucherService;
 use App\Support\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ class CheckoutController extends Controller
     public function __construct(
         private PaystackService $paystack,
         private OrderService $orders,
+        private VoucherService $vouchers,
     ) {}
 
     public function checkout(Request $request)
@@ -47,6 +49,7 @@ class CheckoutController extends Controller
             'shipping_address.state' => ['required_without:address_id', 'string', 'max:120'],
             'shipping_address.country' => ['nullable', 'string', 'max:120'],
             'callback_url' => ['nullable', 'url', 'max:500'],
+            'coupon_code' => ['nullable', 'string', 'max:60'],
         ]);
 
         $user = $request->user();
@@ -78,7 +81,9 @@ class CheckoutController extends Controller
             }
         }
 
-        $order = DB::transaction(function () use ($lines, $user, $commissionRate, $shipping, $address) {
+        $couponCode = $data['coupon_code'] ?? null;
+
+        $order = DB::transaction(function () use ($lines, $user, $commissionRate, $shipping, $address, $couponCode) {
             $grouped = [];
             $subtotal = 0;
 
@@ -136,9 +141,21 @@ class CheckoutController extends Controller
             }
 
             $shippingTotal = 0;
-            foreach ($grouped as $group) {
-                $shippingTotal += (float) ($group['store']->shipping_fee ?? 0);
+            $shippingByStore = [];
+            foreach ($grouped as $storeId => $group) {
+                $shippingByStore[$storeId] = (float) ($group['store']->shipping_fee ?? 0);
+                $shippingTotal += $shippingByStore[$storeId];
             }
+
+            $voucher = null;
+            if ($couponCode) {
+                $voucher = $this->vouchers->evaluate($couponCode, $user, collect($grouped)->flatMap(fn ($g, $storeId) => collect($g['items'])->map(fn ($l) => [
+                    'store_id' => $storeId,
+                    'category_id' => $l['product']->category_id,
+                    'total' => $l['total'],
+                ]))->values()->all(), $shippingByStore);
+            }
+            $discount = (float) ($voucher['discount'] ?? 0);
 
             $order = Order::create([
                 'order_number' => 'ATL-'.strtoupper(Str::random(8)),
@@ -148,9 +165,15 @@ class CheckoutController extends Controller
                 'payment_status' => 'pending',
                 'subtotal' => $subtotal,
                 'shipping_total' => $shippingTotal,
-                'total' => $subtotal + $shippingTotal,
+                'discount_total' => $discount,
+                'coupon_code' => $voucher['coupon']->code ?? null,
+                'total' => max(0, $subtotal + $shippingTotal - $discount),
                 'shipping_snapshot' => $shipping,
             ]);
+
+            if ($voucher) {
+                $this->vouchers->reserve($voucher['coupon'], $user, $order, $discount);
+            }
 
             foreach ($grouped as $group) {
                 $store = $group['store'];
@@ -164,6 +187,8 @@ class CheckoutController extends Controller
                     'status' => OrderStatus::PENDING,
                     'subtotal' => $storeSubtotal,
                     'shipping_fee' => $ship,
+                    // Platform-funded: the seller's earning is unaffected by vouchers.
+                    'discount' => (float) ($voucher['per_store'][$store->id] ?? 0),
                     'total' => $storeSubtotal + $ship,
                     'commission' => $commission,
                     'vendor_earning' => $storeSubtotal + $ship - $commission,
@@ -340,6 +365,7 @@ class CheckoutController extends Controller
 
             $order->payment_status = 'paid';
             $order->save();
+            $this->vouchers->redeem($order);
 
             foreach ($order->subOrders as $subOrder) {
                 if (in_array($subOrder->status, [OrderStatus::PENDING, OrderStatus::EXPIRED], true)) {
@@ -393,6 +419,11 @@ class CheckoutController extends Controller
 
     private function buildSplit(Order $order): array
     {
+        // Discounted orders are paid out through statements so the platform can absorb the voucher.
+        if ((float) $order->discount_total > 0) {
+            return [];
+        }
+
         $subOrders = $order->subOrders()->with('store')->get();
         if ($subOrders->count() === 1) {
             $store = $subOrders->first()->store;

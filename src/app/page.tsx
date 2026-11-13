@@ -1,49 +1,71 @@
 import Link from "next/link";
+import { CategoryTiles } from "@/components/home/category-tiles";
 import { HeroBanner } from "@/components/home/hero-banner";
 import { ProductRail } from "@/components/home/product-rail";
-import { ValueProps } from "@/components/home/value-props";
-import { getBanners, getHomeFeed } from "@/lib/catalog";
+import { PromoTiles } from "@/components/home/promo-tiles";
+import { RecentlyViewedRail } from "@/components/home/recently-viewed-rail";
+import { getBanners, getCategories, getHomeFeed } from "@/lib/catalog";
+
+export const revalidate = 60;
 
 export default async function HomePage() {
-  const [banners, feed] = await Promise.all([getBanners(), getHomeFeed()]);
+  const [banners, feed, categories] = await Promise.all([getBanners(), getHomeFeed(), getCategories()]);
+  const flash = feed.flash.length ? feed.flash : feed.deals;
+  const nothing =
+    !feed.deals.length && !feed.top_sellers.length && !feed.new_arrivals.length && !feed.categories.length;
 
   return (
-    <div className="bg-[var(--page-bg)] pb-8">
+    <div className="bg-[var(--page-bg)] pb-10">
       <HeroBanner banners={banners} />
-      <ValueProps />
+      <PromoTiles banners={banners} />
+
+      {nothing && (
+        <section className="pt-3">
+          <div className="container-atelier">
+            <div className="rounded-md bg-white px-5 py-10 text-center">
+              <h2 className="font-display text-2xl text-burgundy">
+                {feed.error ? "We couldn't load products right now" : "New pieces are on their way"}
+              </h2>
+              <p className="mt-2 text-sm text-muted">
+                {feed.error ? "Please refresh in a moment." : "Our makers are listing new work. Check back soon."}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <ProductRail
-        eyebrow="Limited prices"
-        title="Flash Deals"
-        href="/shop"
-        products={feed.deals}
-        tone="deal"
+        title="Flash Sales"
+        subtitle={feed.flash_ends_at ? undefined : "Limited-time prices"}
+        href="/shop?on_sale=1&sort=discount"
+        products={flash}
+        tone="crimson"
+        endsAt={feed.flash.length ? feed.flash_ends_at : null}
+        showStockBar
       />
-      <ProductRail
-        eyebrow="Paid placement"
-        title="Sponsored"
-        href="/shop"
-        products={feed.sponsored}
-        tone="sponsored"
-      />
+
+      <CategoryTiles categories={categories} />
+
+      <ProductRail title="Top Sellers" subtitle="What shoppers love right now" href="/shop?sort=popular" products={feed.top_sellers} tone="dark" />
+
+      <ProductRail title="Sponsored" subtitle="Featured by our makers" href="/shop" products={feed.sponsored} tone="burgundy" />
+
+      <ProductRail title="New Arrivals" href="/shop?sort=newest" products={feed.new_arrivals} tone="light" />
+
+      <RecentlyViewedRail />
 
       {feed.categories.map((row) => (
-        <ProductRail
-          key={row.category.id}
-          title={row.category.name}
-          href={`/shop?category=${row.category.slug}`}
-          products={row.products}
-        />
+        <ProductRail key={row.category.id} title={row.category.name} href={`/category/${row.category.slug}`} products={row.products} tone="light" />
       ))}
 
       {feed.stores.slice(0, 4).map((row) => (
         <ProductRail
           key={row.store.id}
-          eyebrow="Official Store"
           title={row.store.name}
+          subtitle="Official Store"
           href={`/makers/${row.store.slug}`}
           products={row.products}
-          tone="sponsored"
+          tone="dark"
         />
       ))}
 
@@ -52,15 +74,15 @@ export default async function HomePage() {
           <div className="overflow-hidden rounded-md bg-burgundy px-5 py-6 text-white md:flex md:items-center md:justify-between md:px-8 md:py-8">
             <div className="max-w-xl">
               <h2 className="font-display text-2xl md:text-3xl">Sell your craft on Atelier</h2>
-              <p className="mt-2 text-[13px] leading-relaxed text-white/78 md:text-sm">
-                List handmade work, manage orders, and reach buyers who value Nigerian craft.
+              <p className="mt-2 text-[13px] leading-relaxed text-white/80 md:text-sm">
+                List your products, manage orders and get paid weekly. Reach buyers across all 36 states.
               </p>
             </div>
             <Link
               href="/become-a-vendor"
               className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-white px-5 text-sm font-semibold text-burgundy transition hover:bg-surface-warm md:mt-0"
             >
-              Become a vendor
+              Start selling
             </Link>
           </div>
         </div>

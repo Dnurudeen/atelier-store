@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
+const noop = () => () => {};
+
+/** Current year without a hydration mismatch (server renders the build-time year). */
 export function CurrentYear() {
-  const [year, setYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
-
-  return <>{year ?? "2026"}</>;
+  const year = useSyncExternalStore(noop, () => new Date().getFullYear(), () => 2026);
+  return <>{year}</>;
 }

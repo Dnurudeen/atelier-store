@@ -55,11 +55,8 @@ describe("catalog safe fallbacks", () => {
     await expect(catalog.getBanners()).resolves.toEqual(demoBanners);
     await expect(catalog.getStores()).resolves.toEqual(demoStores);
 
-    const featured = await catalog.getFeaturedProducts();
-    expect(featured.every((p) => p.is_featured)).toBe(true);
-
     const products = await catalog.getProducts();
-    expect(products.total).toBe(demoProducts.length);
+    expect(products.meta.total).toBe(demoProducts.length);
 
     const first = demoProducts[0];
     await expect(catalog.getProduct(first.slug)).resolves.toMatchObject({ id: first.id });
@@ -68,19 +65,34 @@ describe("catalog safe fallbacks", () => {
     const store = demoStores[0];
     await expect(catalog.getStore(store.slug)).resolves.toMatchObject({ id: store.id });
     const storeProducts = await catalog.getStoreProducts(store.slug);
-    expect(storeProducts.every((p) => p.store?.slug === store.slug)).toBe(true);
+    expect(storeProducts.data.every((p) => p.store?.slug === store.slug)).toBe(true);
   });
 
-  it("falls back to demo data when the api throws", async () => {
+  it("never shows demo products in live mode when the api fails", async () => {
     vi.stubEnv("NEXT_PUBLIC_USE_DEMO", "false");
     vi.resetModules();
+    vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { api } = await import("./api");
-    vi.mocked(api).mockRejectedValue(new Error("network down"));
+    vi.mocked(api).mockRejectedValue({ message: "network down", status: 0 });
 
     const catalog = await import("./catalog");
-    const { demoCategories } = await import("./demo-data");
 
-    await expect(catalog.getCategories()).resolves.toEqual(demoCategories);
+    await expect(catalog.getCategories()).resolves.toEqual([]);
+    const products = await catalog.getProducts("category=fashion");
+    expect(products.data).toEqual([]);
+    expect(products.error).toBe(true);
+    const feed = await catalog.getHomeFeed();
+    expect(feed.error).toBe(true);
+    expect(feed.deals).toEqual([]);
+    await expect(catalog.getProduct("anything")).resolves.toBeNull();
+  });
+
+  it("finds categories and their parents in the tree", async () => {
+    const { findCategory } = await import("./catalog");
+    const tree = [{ id: 1, name: "Fashion", slug: "fashion", children: [{ id: 2, name: "Dresses", slug: "dresses" }] }];
+    expect(findCategory(tree, "dresses")).toMatchObject({ category: { id: 2 }, parent: { id: 1 } });
+    expect(findCategory(tree, "fashion")).toMatchObject({ category: { id: 1 }, parent: null });
+    expect(findCategory(tree, "nope")).toBeNull();
   });
 });

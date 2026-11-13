@@ -6,6 +6,15 @@ import { cn } from "@/lib/utils";
 
 const FALLBACK = "/media/fallback.jpg";
 
+/**
+ * Absolute URLs (vendor uploads on the API host, vendor CDNs) are served as-is:
+ * uploads are already resized to WebP by the API, and Next's optimizer refuses
+ * private/local hosts and any host not listed in remotePatterns.
+ */
+function isExternal(src: string) {
+  return /^https?:\/\//i.test(src);
+}
+
 type AppImageProps = Omit<ImageProps, "src" | "alt" | "onError"> & {
   src?: string | null;
   alt: string;
@@ -33,14 +42,17 @@ export function AppImage({
   const initial = src && String(src).trim() ? String(src) : fallbackSrc;
   const [current, setCurrent] = useState(initial);
   const [failed, setFailed] = useState(false);
+  const shown = failed ? fallbackSrc : current;
+  const unoptimized = rest.unoptimized ?? isExternal(shown);
 
   if (fill) {
     return (
       <div className={cn("relative overflow-hidden bg-surface", frameClassName)}>
         <Image
           {...rest}
-          src={failed ? fallbackSrc : current}
+          src={shown}
           alt={alt}
+          unoptimized={unoptimized}
           fill
           sizes={sizes || "(max-width:768px) 100vw, 33vw"}
           priority={priority}
@@ -59,8 +71,9 @@ export function AppImage({
   return (
     <Image
       {...rest}
-      src={failed ? fallbackSrc : current}
+      src={shown}
       alt={alt}
+      unoptimized={unoptimized}
       className={cn("object-contain", className)}
       priority={priority}
       onError={() => {

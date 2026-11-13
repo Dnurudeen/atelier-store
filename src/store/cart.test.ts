@@ -21,7 +21,7 @@ describe("useCartStore", () => {
     window.localStorage.clear();
   });
 
-  it("adds items, merges quantities, and opens the drawer", () => {
+  it("adds items and merges quantities without auto-opening any drawer", () => {
     const store = useCartStore.getState();
     store.addItem(product(), 1);
     store.addItem(product(), 2);
@@ -29,7 +29,7 @@ describe("useCartStore", () => {
     const state = useCartStore.getState();
     expect(state.items).toHaveLength(1);
     expect(state.items[0].quantity).toBe(3);
-    expect(state.isOpen).toBe(true);
+    expect(state.isOpen).toBe(false);
     expect(state.count()).toBe(3);
     expect(state.subtotal()).toBe(150000);
   });
@@ -77,5 +77,22 @@ describe("useCartStore", () => {
     store.addItem(product(), 1);
     store.clear();
     expect(useCartStore.getState().items).toHaveLength(0);
+  });
+
+  it("caps quantities at stock and the per-line limit", () => {
+    const limited = product({ id: 5, stock: 2 });
+    expect(useCartStore.getState().addItem(limited, 5)).toBe(2);
+    expect(useCartStore.getState().addItem(limited, 1)).toBe(0);
+    useCartStore.getState().updateQuantity("5:base", 10);
+    expect(useCartStore.getState().items.find((i) => i.key === "5:base")?.quantity).toBe(2);
+
+    const plenty = product({ id: 6, stock: 500 });
+    useCartStore.getState().addItem(plenty, 50);
+    expect(useCartStore.getState().items.find((i) => i.key === "6:base")?.quantity).toBe(20);
+  });
+
+  it("refuses out-of-stock items", () => {
+    expect(useCartStore.getState().addItem(product({ id: 7, stock: 0 }), 1)).toBe(0);
+    expect(useCartStore.getState().items.find((i) => i.productId === 7)).toBeUndefined();
   });
 });
