@@ -175,6 +175,8 @@ class CheckoutController extends Controller
                         'product_id' => $line['product']->id,
                         'product_variant_id' => $line['variant']?->id,
                         'product_name' => $line['product']->name,
+                        'variant_name' => $line['variant']?->name,
+                        'image' => $line['product']->images->first()?->url,
                         'quantity' => $line['quantity'],
                         'unit_price' => $line['unit_price'],
                         'total' => $line['total'],

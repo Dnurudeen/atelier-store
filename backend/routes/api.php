@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\VendorController;
+use App\Http\Controllers\Api\VendorProductController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureVendor;
@@ -23,12 +25,14 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
     Route::get('/home-feed', [CatalogController::class, 'home']);
     Route::get('/categories', [CatalogController::class, 'categories']);
+    Route::get('/brands', [CatalogController::class, 'brands']);
     Route::get('/banners', [CatalogController::class, 'banners']);
     Route::get('/products', [CatalogController::class, 'products']);
     Route::get('/products/{slug}', [CatalogController::class, 'product']);
     Route::get('/stores', [CatalogController::class, 'stores']);
     Route::get('/stores/{slug}', [CatalogController::class, 'store']);
     Route::get('/stores/{slug}/products', [CatalogController::class, 'storeProducts']);
+    Route::get('/products/{slug}/related', [CatalogController::class, 'related']);
     Route::get('/search', [CatalogController::class, 'search']);
 
     Route::post('/webhooks/paystack', [CheckoutController::class, 'webhook'])->withoutMiddleware('throttle:api');
@@ -42,6 +46,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::put('/auth/password', [AuthController::class, 'changePassword']);
         Route::delete('/auth/account', [AuthController::class, 'deleteAccount']);
         Route::post('/auth/email/resend', [AuthController::class, 'resendVerification'])->middleware('throttle:auth');
+
+        Route::post('/uploads', [UploadController::class, 'store'])->middleware('throttle:30,1');
 
         Route::post('/checkout', [CheckoutController::class, 'checkout']);
         Route::get('/payments/verify/{reference}', [CheckoutController::class, 'verify']);
@@ -61,9 +67,13 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         Route::prefix('vendor')->middleware([EnsureVendor::class])->group(function () {
             Route::get('/overview', [VendorController::class, 'overview']);
-            Route::get('/products', [VendorController::class, 'products']);
-            Route::post('/products', [VendorController::class, 'storeProduct']);
-            Route::put('/products/{id}', [VendorController::class, 'updateProduct']);
+            Route::get('/products', [VendorProductController::class, 'index']);
+            Route::post('/products', [VendorProductController::class, 'store']);
+            Route::post('/products/inventory', [VendorProductController::class, 'bulkInventory']);
+            Route::get('/products/{id}', [VendorProductController::class, 'show'])->whereNumber('id');
+            Route::put('/products/{id}', [VendorProductController::class, 'update'])->whereNumber('id');
+            Route::delete('/products/{id}', [VendorProductController::class, 'destroy'])->whereNumber('id');
+            Route::post('/products/{id}/duplicate', [VendorProductController::class, 'duplicate'])->whereNumber('id');
             Route::get('/orders', [VendorController::class, 'orders']);
             Route::put('/orders/{id}', [VendorController::class, 'updateOrder']);
             Route::get('/earnings', [VendorController::class, 'earnings']);

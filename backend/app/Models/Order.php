@@ -12,12 +12,13 @@ class Order extends Model
 {
     protected $fillable = [
         'order_number', 'user_id', 'address_id', 'status', 'payment_status',
-        'subtotal', 'shipping_total', 'total', 'paystack_reference', 'shipping_snapshot',
+        'subtotal', 'shipping_total', 'discount_total', 'coupon_code', 'total', 'paystack_reference', 'shipping_snapshot',
     ];
 
     protected $casts = [
         'subtotal' => 'decimal:2',
         'shipping_total' => 'decimal:2',
+        'discount_total' => 'decimal:2',
         'total' => 'decimal:2',
         'shipping_snapshot' => 'array',
     ];

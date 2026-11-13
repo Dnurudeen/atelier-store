@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SubOrder extends Model
 {
     protected $fillable = [
-        'order_id', 'store_id', 'status', 'subtotal', 'shipping_fee',
+        'order_id', 'store_id', 'status', 'subtotal', 'shipping_fee', 'discount',
         'total', 'commission', 'vendor_earning', 'tracking_number',
         'shipped_at', 'delivered_at', 'returned_at', 'statement_id',
         'cancelled_at', 'cancel_reason', 'cancelled_by', 'refund_status',
@@ -20,6 +20,7 @@ class SubOrder extends Model
     protected $casts = [
         'subtotal' => 'decimal:2',
         'shipping_fee' => 'decimal:2',
+        'discount' => 'decimal:2',
         'total' => 'decimal:2',
         'commission' => 'decimal:2',
         'vendor_earning' => 'decimal:2',
@@ -50,6 +51,11 @@ class SubOrder extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class);
     }
 
     public function items(): HasMany

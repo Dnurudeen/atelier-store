@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Review extends Model
 {
-    protected $fillable = ['user_id', 'product_id', 'rating', 'comment'];
+    protected $fillable = ['user_id', 'product_id', 'rating', 'title', 'comment', 'is_hidden', 'vendor_reply', 'vendor_replied_at'];
+
+    protected $casts = ['is_hidden' => 'boolean', 'vendor_replied_at' => 'datetime'];
 
     public function user(): BelongsTo
     {

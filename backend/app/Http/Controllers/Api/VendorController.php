@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Payout;
 use App\Models\Product;
-use App\Models\ProductImage;
-use App\Models\ProductVariant;
 use App\Models\Sponsorship;
 use App\Models\Statement;
 use App\Models\Store;
@@ -99,78 +97,6 @@ class VendorController extends Controller
         }
 
         return response()->json(['data' => $store->fresh()->withPrivateDetails()]);
-    }
-
-    public function products(Request $request)
-    {
-        $store = $this->storeOrFail($request);
-        $products = Product::with('images', 'category', 'variants')
-            ->where('store_id', $store->id)
-            ->latest()
-            ->get();
-
-        return response()->json(['data' => $products]);
-    }
-
-    public function storeProduct(Request $request)
-    {
-        $store = $this->storeOrFail($request);
-        $data = $this->validateProduct($request);
-
-        $product = Product::create([
-            'store_id' => $store->id,
-            'category_id' => $data['category_id'] ?? null,
-            'name' => $data['name'],
-            'slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(5)),
-            'description' => $data['description'] ?? null,
-            'specs' => $data['specs'] ?? null,
-            'price' => $data['price'],
-            'compare_at_price' => $data['compare_at_price'] ?? null,
-            'sale_ends_at' => $data['sale_ends_at'] ?? null,
-            'stock' => $data['stock'],
-            'status' => 'pending',
-        ]);
-
-        if (! empty($data['image_url'])) {
-            ProductImage::create([
-                'product_id' => $product->id,
-                'url' => $data['image_url'],
-                'is_primary' => true,
-            ]);
-        }
-
-        $this->syncVariants($product, $data);
-
-        return response()->json(['data' => $product->load('images', 'variants', 'category')], 201);
-    }
-
-    public function updateProduct(Request $request, int $id)
-    {
-        $store = $this->storeOrFail($request);
-        $product = Product::where('store_id', $store->id)->findOrFail($id);
-        $data = $this->validateProduct($request, partial: true);
-
-        // Sellers can never publish directly: "published" means "submit for review".
-        if (($data['status'] ?? null) === 'published') {
-            $data['status'] = $product->status === 'published' ? 'published' : 'pending';
-        }
-
-        unset($data['sizes'], $data['colors'], $data['image_url']);
-        $product->fill($data);
-
-        // Content changes on a live listing go back to moderation; price/stock edits stay live.
-        $moderated = ['name', 'description', 'category_id', 'specs'];
-        if ($product->status === 'published' && $product->isDirty($moderated)) {
-            $product->status = 'pending';
-        }
-        $product->save();
-
-        if ($request->exists('sizes') || $request->exists('colors')) {
-            $product->variants()->delete();
-            $this->syncVariants($product, $request->all());
-        }
-
-        return response()->json(['data' => $product->fresh('images', 'variants', 'category')]);
     }
 
     public function orders(Request $request)
@@ -321,64 +247,6 @@ class VendorController extends Controller
             'statements' => $history,
             'payouts' => Payout::where('store_id', $store->id)->latest()->get(),
         ];
-    }
-
-    private function validateProduct(Request $request, bool $partial = false): array
-    {
-        $required = $partial ? 'sometimes' : 'required';
-
-        return $request->validate([
-            'name' => [$required, 'string', 'max:180'],
-            'description' => ['nullable', 'string'],
-            'price' => [$required, 'numeric', 'min:0'],
-            'compare_at_price' => ['nullable', 'numeric', 'min:0'],
-            'sale_ends_at' => ['nullable', 'date'],
-            'stock' => [$required, 'integer', 'min:0'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-            'image_url' => ['nullable', 'url'],
-            'specs' => ['nullable', 'array'],
-            'specs.medium' => ['nullable', 'string', 'max:120'],
-            'specs.dimensions' => ['nullable', 'string', 'max:120'],
-            'specs.materials' => ['nullable', 'string', 'max:180'],
-            'sizes' => ['nullable', 'array'],
-            'sizes.*' => ['string', 'max:40'],
-            'colors' => ['nullable', 'array'],
-            'colors.*' => ['string', 'max:40'],
-            'status' => ['sometimes', 'in:draft,pending,published'],
-        ]);
-    }
-
-    private function syncVariants(Product $product, array $data): void
-    {
-        $sizes = array_values(array_filter(array_map('trim', $data['sizes'] ?? [])));
-        $colors = array_values(array_filter(array_map('trim', $data['colors'] ?? [])));
-        $stock = (int) ($data['stock'] ?? $product->stock);
-
-        if ($sizes && $colors) {
-            foreach ($colors as $color) {
-                foreach ($sizes as $size) {
-                    ProductVariant::create([
-                        'product_id' => $product->id,
-                        'name' => $color.' / '.$size,
-                        'stock' => $stock,
-                        'attributes' => ['color' => $color, 'size' => $size],
-                    ]);
-                }
-            }
-
-            return;
-        }
-
-        $values = $sizes ?: $colors;
-        $key = $sizes ? 'size' : 'color';
-        foreach ($values as $value) {
-            ProductVariant::create([
-                'product_id' => $product->id,
-                'name' => $value,
-                'stock' => $stock,
-                'attributes' => [$key => $value],
-            ]);
-        }
     }
 
     private function storeOrFail(Request $request): Store

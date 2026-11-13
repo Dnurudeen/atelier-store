@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Category extends Model
 {
     protected $fillable = [
-        'parent_id', 'name', 'slug', 'image', 'description', 'sort_order',
+        'parent_id', 'name', 'slug', 'image', 'icon', 'description', 'sort_order', 'is_active',
     ];
+
+    protected $casts = ['is_active' => 'boolean'];
 
     public function parent(): BelongsTo
     {
