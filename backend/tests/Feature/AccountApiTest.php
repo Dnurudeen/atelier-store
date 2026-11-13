@@ -39,7 +39,7 @@ class AccountApiTest extends TestCase
         $this->withHeaders($this->authHeaders($user))->postJson('/api/v1/account/addresses', [
             'label' => 'Home',
             'full_name' => 'Ada',
-            'phone' => '0801',
+            'phone' => '0801 234 5678',
             'address_line' => '12 Road',
             'city' => 'Lagos',
             'state' => 'Lagos',
@@ -48,7 +48,7 @@ class AccountApiTest extends TestCase
 
         $this->withHeaders($this->authHeaders($user))->postJson('/api/v1/account/addresses', [
             'full_name' => 'Ada',
-            'phone' => '0801',
+            'phone' => '0801 234 5678',
             'address_line' => 'Office',
             'city' => 'Abuja',
             'state' => 'FCT',

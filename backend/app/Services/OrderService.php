@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\InboxNotification;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
@@ -84,9 +85,36 @@ class OrderService
 
             $subOrder->save();
             $subOrder->order?->syncStatus();
+            $this->notifyTransition($subOrder, $to, $actor);
 
             return $subOrder;
         });
+    }
+
+    private function notifyTransition(SubOrder $subOrder, string $to, string $actor): void
+    {
+        $order = $subOrder->order;
+        if (! $order) {
+            return;
+        }
+        $subOrder->loadMissing('store');
+        $link = '/account/orders/'.$order->id;
+        $store = $subOrder->store?->name ?? 'The seller';
+
+        $customer = match ($to) {
+            OrderStatus::PROCESSING => ['Order being prepared', "{$store} is packing your items from order {$order->order_number}."],
+            OrderStatus::SHIPPED => ['Your package is on the way', "{$store} shipped part of order {$order->order_number}".($subOrder->tracking_number ? " (tracking: {$subOrder->tracking_number})." : '.')],
+            OrderStatus::DELIVERED => ['Package delivered', "Your items from {$store} were delivered. Enjoy! You can now rate them."],
+            OrderStatus::CANCELLED => $actor === 'customer' ? null : ['Package cancelled', "{$store} cancelled part of order {$order->order_number}".($subOrder->cancel_reason ? ": {$subOrder->cancel_reason}" : '.').($subOrder->refund_status === 'pending' ? ' A full refund is on its way.' : '')],
+            default => null,
+        };
+        if ($customer) {
+            InboxNotification::notify($order->user_id, 'order', $customer[0], $customer[1], $link);
+        }
+
+        if ($to === OrderStatus::CANCELLED && $actor === 'customer') {
+            InboxNotification::notify($subOrder->store?->user_id, 'order', 'Order cancelled by customer', "Order {$order->order_number} was cancelled before shipping. Stock has been restored.", '/vendor/orders/'.$subOrder->id);
+        }
     }
 
     /** Put reserved stock back on the shelf. */

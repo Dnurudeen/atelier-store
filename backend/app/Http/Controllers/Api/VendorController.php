@@ -129,6 +129,31 @@ class VendorController extends Controller
         return response()->json(['data' => $subOrder->fresh(['items', 'order'])]);
     }
 
+    public function returns(Request $request)
+    {
+        $store = $this->storeOrFail($request);
+        $query = \App\Models\ReturnRequest::with(['item', 'user:id,name', 'subOrder:id,order_id,tracking_number', 'subOrder.order:id,order_number'])
+            ->where('store_id', $store->id)
+            ->latest();
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return response()->json(['data' => $query->get()]);
+    }
+
+    public function updateReturn(Request $request, int $id, \App\Services\ReturnService $returns)
+    {
+        $store = $this->storeOrFail($request);
+        $data = $request->validate([
+            'action' => ['required', 'in:approve,reject,receive'],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $return = \App\Models\ReturnRequest::where('store_id', $store->id)->findOrFail($id);
+
+        return response()->json(['data' => $returns->sellerAction($return, $data['action'], $data['note'] ?? null)->load('item')]);
+    }
+
     public function earnings(Request $request)
     {
         $store = $this->storeOrFail($request);

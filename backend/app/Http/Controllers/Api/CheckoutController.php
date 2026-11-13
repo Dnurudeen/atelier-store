@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\OrderPaidMail;
+use App\Models\InboxNotification;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -376,6 +377,11 @@ class CheckoutController extends Controller
 
             $order->syncStatus();
             $paidOrder = $order;
+
+            InboxNotification::notify($order->user_id, 'order', 'Order confirmed', "We received your payment for order {$order->order_number}. Sellers are preparing your items.", '/account/orders/'.$order->id);
+            foreach ($order->subOrders()->with('store')->get() as $sub) {
+                InboxNotification::notify($sub->store?->user_id, 'order', 'New paid order', "Order {$order->order_number}: please process and ship within 2 business days.", '/vendor/orders/'.$sub->id);
+            }
         });
 
         if ($paidOrder && $paidOrder->user?->email) {

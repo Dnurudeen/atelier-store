@@ -168,6 +168,28 @@ class AdminController extends Controller
         return response()->json(['data' => $banner]);
     }
 
+    public function returns(Request $request)
+    {
+        $query = \App\Models\ReturnRequest::with(['item', 'user:id,name,email', 'store:id,name,slug', 'subOrder.order:id,order_number'])
+            ->latest();
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return response()->json(['data' => $query->limit(200)->get()]);
+    }
+
+    public function updateReturn(Request $request, int $id, \App\Services\ReturnService $returns)
+    {
+        $data = $request->validate([
+            'decision' => ['required', 'in:approve,refund,reject'],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $return = \App\Models\ReturnRequest::findOrFail($id);
+
+        return response()->json(['data' => $returns->adminResolve($return, $data['decision'], $data['note'] ?? null)]);
+    }
+
     public function payouts()
     {
         return response()->json([

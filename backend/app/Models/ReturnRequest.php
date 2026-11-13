@@ -19,12 +19,15 @@ class ReturnRequest extends Model
     public const OPEN = ['requested', 'approved', 'escalated'];
 
     protected $fillable = [
-        'sub_order_id', 'order_item_id', 'user_id', 'store_id', 'quantity', 'reason', 'details',
+        'sub_order_id', 'order_item_id', 'user_id', 'store_id', 'quantity', 'refund_amount', 'seller_deduction',
+        'refund_status', 'clawback_statement_id', 'reason', 'details',
         'photos', 'status', 'vendor_note', 'admin_note', 'resolved_at',
     ];
 
     protected $casts = [
         'photos' => 'array',
+        'refund_amount' => 'decimal:2',
+        'seller_deduction' => 'decimal:2',
         'resolved_at' => 'datetime',
     ];
 

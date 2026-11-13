@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Payout;
+use App\Models\ReturnRequest;
 use App\Models\SponsoredCharge;
 use App\Models\Statement;
 use App\Models\Store;
@@ -34,6 +35,17 @@ class StatementService
             ->get();
     }
 
+    /** Partial returns received back by the seller and not yet deducted. */
+    public function unsettledReturnDeductions(Store $store): Collection
+    {
+        return ReturnRequest::query()
+            ->where('store_id', $store->id)
+            ->where('status', 'received')
+            ->where('seller_deduction', '>', 0)
+            ->whereNull('clawback_statement_id')
+            ->get();
+    }
+
     public function unsettledCharges(Store $store): Collection
     {
         return SponsoredCharge::query()
@@ -51,7 +63,8 @@ class StatementService
     {
         $orders = $this->unsettledOrders($store);
         $charges = $this->unsettledCharges($store);
-        $clawbacks = (float) $this->unsettledClawbacks($store)->sum('vendor_earning');
+        $clawbacks = (float) $this->unsettledClawbacks($store)->sum('vendor_earning')
+            + (float) $this->unsettledReturnDeductions($store)->sum('seller_deduction');
 
         return [
             'pending' => round((float) $orders->sum('vendor_earning') - (float) $charges->sum('amount') - $clawbacks, 2),
@@ -87,6 +100,7 @@ class StatementService
             $orders = $this->unsettledOrders($store);
             $charges = $this->unsettledCharges($store);
             $clawbacks = $this->unsettledClawbacks($store);
+            $returnDeductions = $this->unsettledReturnDeductions($store);
             if ($orders->isEmpty() && $charges->isEmpty()) {
                 return null;
             }
@@ -94,7 +108,7 @@ class StatementService
             $sales = round((float) $orders->sum('subtotal'), 2);
             $commission = round((float) $orders->sum('commission'), 2);
             $fees = round((float) $charges->sum('amount'), 2);
-            $adjustments = round(-(float) $clawbacks->sum('vendor_earning'), 2);
+            $adjustments = round(-(float) $clawbacks->sum('vendor_earning') - (float) $returnDeductions->sum('seller_deduction'), 2);
             $net = round((float) $orders->sum('vendor_earning') - $fees + $adjustments, 2);
 
             if ($net <= 0) {
@@ -124,6 +138,7 @@ class StatementService
             SubOrder::whereIn('id', $orders->pluck('id'))->update(['statement_id' => $statement->id]);
             SponsoredCharge::whereIn('id', $charges->pluck('id'))->update(['statement_id' => $statement->id]);
             SubOrder::whereIn('id', $clawbacks->pluck('id'))->update(['clawback_statement_id' => $statement->id]);
+            ReturnRequest::whereIn('id', $returnDeductions->pluck('id'))->update(['clawback_statement_id' => $statement->id]);
 
             return $statement->fresh();
         });

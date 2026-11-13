@@ -6,7 +6,7 @@ import { toast } from "@/components/ui/toast";
 import { api, errorMessage, type Product } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 
-type WishlistRow = { id: number; product_id: number; product: Product };
+export type WishlistRow = { id: number; product_id: number; product: Product; available?: boolean };
 
 /** The signed-in shopper's saved items (shared cache so every heart agrees). */
 export function useWishlist() {

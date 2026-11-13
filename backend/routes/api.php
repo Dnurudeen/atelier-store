@@ -57,8 +57,18 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/checkout', [CheckoutController::class, 'checkout']);
         Route::get('/payments/verify/{reference}', [CheckoutController::class, 'verify']);
 
+        Route::get('/account/overview', [AccountController::class, 'overview']);
         Route::get('/account/orders', [AccountController::class, 'orders']);
-        Route::get('/account/orders/{id}', [AccountController::class, 'order']);
+        Route::get('/account/orders/{id}', [AccountController::class, 'order'])->whereNumber('id');
+        Route::post('/account/orders/{order}/sub-orders/{subOrder}/cancel', [AccountController::class, 'cancelSubOrder'])->whereNumber(['order', 'subOrder']);
+        Route::get('/account/returns', [AccountController::class, 'returns']);
+        Route::post('/account/returns', [AccountController::class, 'requestReturn']);
+        Route::post('/account/returns/{id}/escalate', [AccountController::class, 'escalateReturn'])->whereNumber('id');
+        Route::get('/account/inbox', [AccountController::class, 'inbox']);
+        Route::post('/account/inbox/read', [AccountController::class, 'markInboxRead']);
+        Route::get('/account/reviews/pending', [AccountController::class, 'pendingReviews']);
+        Route::get('/account/reviews', [AccountController::class, 'myReviews']);
+        Route::get('/account/vouchers', [AccountController::class, 'vouchers']);
         Route::get('/account/addresses', [AccountController::class, 'addresses']);
         Route::post('/account/addresses', [AccountController::class, 'storeAddress']);
         Route::put('/account/addresses/{id}', [AccountController::class, 'updateAddress']);
@@ -89,6 +99,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/sponsorships', [VendorController::class, 'storeSponsorship']);
             Route::put('/sponsorships/{id}', [VendorController::class, 'updateSponsorship']);
             Route::put('/settings', [VendorController::class, 'settings']);
+            Route::get('/returns', [VendorController::class, 'returns']);
+            Route::put('/returns/{id}', [VendorController::class, 'updateReturn'])->whereNumber('id');
         });
 
         Route::prefix('admin')->middleware([EnsureAdmin::class])->group(function () {
@@ -103,6 +115,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/banners', [AdminController::class, 'banners']);
             Route::post('/banners', [AdminController::class, 'storeBanner']);
             Route::put('/banners/{id}', [AdminController::class, 'updateBanner']);
+            Route::get('/returns', [AdminController::class, 'returns']);
+            Route::put('/returns/{id}', [AdminController::class, 'updateReturn'])->whereNumber('id');
             Route::get('/payouts', [AdminController::class, 'payouts']);
             Route::put('/payouts/{id}', [AdminController::class, 'updatePayout']);
             Route::post('/statements/close', [AdminController::class, 'closeStatements']);

@@ -10,7 +10,6 @@ import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 const CHROMELESS_PREFIXES = [
   "/vendor",
   "/admin",
-  "/account",
   "/login",
   "/register",
   "/onboarding",
