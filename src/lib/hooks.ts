@@ -13,6 +13,17 @@ export function useCategories() {
   });
 }
 
+export type SiteSettings = { support_email?: string | null; support_phone?: string | null; announcement?: string | null };
+
+/** Public site settings managed in the admin console. */
+export function useSite() {
+  return useQuery({
+    queryKey: ["site"],
+    queryFn: async () => (await api<{ data: SiteSettings }>("/site", { token: null })).data,
+    staleTime: 10 * 60_000,
+  });
+}
+
 export function useDebounced<T>(value: T, delay = 250): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {

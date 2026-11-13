@@ -14,6 +14,18 @@ class SupportController extends Controller
 {
     public const TOPICS = ['general', 'order', 'payment', 'returns', 'selling', 'account'];
 
+    /** Public site settings for the storefront (contacts, announcement strip). */
+    public function site()
+    {
+        return response()->json([
+            'data' => [
+                'support_email' => \App\Models\Setting::getValue('support_email', MailBrand::supportEmail()),
+                'support_phone' => \App\Models\Setting::getValue('support_phone'),
+                'announcement' => \App\Models\Setting::getValue('announcement'),
+            ],
+        ]);
+    }
+
     public function newsletter(Request $request)
     {
         $data = $request->validate(['email' => ['required', 'email:filter', 'max:190']]);

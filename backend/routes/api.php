@@ -37,6 +37,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::get('/products/{slug}/related', [CatalogController::class, 'related']);
     Route::get('/search', [CatalogController::class, 'search']);
     Route::post('/cart/quote', [CartController::class, 'quote']);
+    Route::get('/site', [SupportController::class, 'site']);
     Route::post('/newsletter', [SupportController::class, 'newsletter'])->middleware('throttle:10,1');
     Route::post('/contact', [SupportController::class, 'contact'])->middleware('throttle:5,1');
 
@@ -109,21 +110,59 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
 
         Route::prefix('admin')->middleware([EnsureAdmin::class])->group(function () {
             Route::get('/overview', [AdminController::class, 'overview']);
+
+            Route::get('/users', [AdminController::class, 'users']);
+            Route::get('/users/{id}', [AdminController::class, 'user'])->whereNumber('id');
+            Route::put('/users/{id}', [AdminController::class, 'updateUser'])->whereNumber('id');
+
             Route::get('/vendors', [AdminController::class, 'vendors']);
-            Route::put('/vendors/{id}', [AdminController::class, 'updateVendor']);
+            Route::get('/vendors/{id}', [AdminController::class, 'vendor'])->whereNumber('id');
+            Route::put('/vendors/{id}', [AdminController::class, 'updateVendor'])->whereNumber('id');
+
             Route::get('/products', [AdminController::class, 'products']);
-            Route::put('/products/{id}', [AdminController::class, 'updateProduct']);
+            Route::get('/products/{id}', [AdminController::class, 'product'])->whereNumber('id');
+            Route::put('/products/{id}', [AdminController::class, 'updateProduct'])->whereNumber('id');
+            Route::delete('/products/{id}', [AdminController::class, 'destroyProduct'])->whereNumber('id');
+
             Route::get('/orders', [AdminController::class, 'orders']);
-            Route::get('/categories', [AdminController::class, 'categories']);
-            Route::post('/categories', [AdminController::class, 'storeCategory']);
-            Route::get('/banners', [AdminController::class, 'banners']);
-            Route::post('/banners', [AdminController::class, 'storeBanner']);
-            Route::put('/banners/{id}', [AdminController::class, 'updateBanner']);
+            Route::get('/orders/{id}', [AdminController::class, 'order'])->whereNumber('id');
+            Route::put('/sub-orders/{id}', [AdminController::class, 'updateSubOrder'])->whereNumber('id');
+
             Route::get('/returns', [AdminController::class, 'returns']);
             Route::put('/returns/{id}', [AdminController::class, 'updateReturn'])->whereNumber('id');
+
+            Route::get('/categories', [AdminController::class, 'categories']);
+            Route::post('/categories', [AdminController::class, 'storeCategory']);
+            Route::put('/categories/{id}', [AdminController::class, 'updateCategory'])->whereNumber('id');
+            Route::delete('/categories/{id}', [AdminController::class, 'destroyCategory'])->whereNumber('id');
+
+            Route::get('/brands', [AdminController::class, 'brands']);
+            Route::post('/brands', [AdminController::class, 'storeBrand']);
+            Route::put('/brands/{id}', [AdminController::class, 'updateBrand'])->whereNumber('id');
+            Route::delete('/brands/{id}', [AdminController::class, 'destroyBrand'])->whereNumber('id');
+
+            Route::get('/coupons', [AdminController::class, 'coupons']);
+            Route::post('/coupons', [AdminController::class, 'storeCoupon']);
+            Route::put('/coupons/{id}', [AdminController::class, 'updateCoupon'])->whereNumber('id');
+            Route::delete('/coupons/{id}', [AdminController::class, 'destroyCoupon'])->whereNumber('id');
+
+            Route::get('/banners', [AdminController::class, 'banners']);
+            Route::post('/banners', [AdminController::class, 'storeBanner']);
+            Route::put('/banners/{id}', [AdminController::class, 'updateBanner'])->whereNumber('id');
+            Route::delete('/banners/{id}', [AdminController::class, 'destroyBanner'])->whereNumber('id');
+
+            Route::get('/reviews', [AdminController::class, 'reviews']);
+            Route::put('/reviews/{id}', [AdminController::class, 'updateReview'])->whereNumber('id');
+
             Route::get('/payouts', [AdminController::class, 'payouts']);
-            Route::put('/payouts/{id}', [AdminController::class, 'updatePayout']);
+            Route::put('/payouts/{id}', [AdminController::class, 'updatePayout'])->whereNumber('id');
             Route::post('/statements/close', [AdminController::class, 'closeStatements']);
+
+            Route::get('/messages', [AdminController::class, 'messages']);
+            Route::put('/messages/{id}', [AdminController::class, 'updateMessage'])->whereNumber('id');
+            Route::get('/subscribers', [AdminController::class, 'subscribers']);
+            Route::get('/audits', [AdminController::class, 'audits']);
+
             Route::match(['get', 'put'], '/settings', [AdminController::class, 'settings']);
         });
     });

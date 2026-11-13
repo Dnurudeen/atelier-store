@@ -24,7 +24,7 @@ import { BrandLogo } from "@/components/brand/logo";
 import { CategoryDrawer } from "@/components/layout/category-drawer";
 import { SearchBox } from "@/components/layout/search-box";
 import { categoryIcon } from "@/lib/category-icons";
-import { useCategories, useDismiss } from "@/lib/hooks";
+import { useCategories, useDismiss, useSite } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
 import { useCartStore } from "@/store/cart";
@@ -96,6 +96,7 @@ export function Header() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { data: categories = [] } = useCategories();
+  const { data: site } = useSite();
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const roles = user?.roles ?? [];
@@ -118,6 +119,11 @@ export function Header() {
   return (
     <>
       <header className={cn("sticky top-0 z-50 bg-white", scrolled && "shadow-[0_2px_8px_rgba(0,0,0,0.08)]")}>
+        {site?.announcement && (
+          <div className="bg-crimson px-4 py-1.5 text-center text-[12px] font-semibold text-white" role="status">
+            {site.announcement}
+          </div>
+        )}
         {/* Top strip */}
         <div className="hidden border-b border-border bg-[var(--page-bg)] text-[12px] text-foreground/80 md:block">
           <div className="container-atelier flex h-8 items-center justify-between gap-4">

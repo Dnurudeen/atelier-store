@@ -50,7 +50,7 @@ class CatalogController extends Controller
     public function banners()
     {
         $banners = Banner::query()
-            ->where('is_active', true)
+            ->live()
             ->orderBy('sort_order')
             ->get();
 
