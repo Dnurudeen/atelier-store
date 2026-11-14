@@ -24,7 +24,7 @@ class CatalogController extends Controller
         $categories = Category::query()
             ->whereNull('parent_id')
             ->where('is_active', true)
-            ->with(['children' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('name')])
+            ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')->orderBy('name')])
             ->orderBy('sort_order')
             ->get();
 
@@ -35,13 +35,13 @@ class CatalogController extends Controller
     {
         $query = Brand::query()
             ->where('is_active', true)
-            ->whereHas('products', fn ($q) => $this->publishedScope($q))
-            ->withCount(['products' => fn ($q) => $this->publishedScope($q)])
+            ->whereHas('products', fn($q) => $this->publishedScope($q))
+            ->withCount(['products' => fn($q) => $this->publishedScope($q)])
             ->orderBy('name');
 
         if ($request->filled('category')) {
             $ids = $this->categoryIds($request->string('category')->toString());
-            $query->whereHas('products', fn ($q) => $q->whereIn('category_id', $ids));
+            $query->whereHas('products', fn($q) => $q->whereIn('category_id', $ids));
         }
 
         return response()->json(['data' => $query->get(['id', 'name', 'slug', 'logo'])]);
@@ -67,13 +67,16 @@ class CatalogController extends Controller
 
         $flashQuery = $this->onSale($this->published())
             ->whereNotNull('sale_ends_at')
+            ->where('sale_ends_at', '>', now())
             ->where('sale_ends_at', '<=', now()->addDays(7));
-        $flash = CatalogRails::uniqueImages((clone $flashQuery)->orderBy('sale_ends_at')->limit(40)->get(), 12);
+        $endingSoon = (clone $flashQuery)->orderBy('sale_ends_at')->limit(40)->get();
+        $otherDeals = $this->onSale($this->published())->latest('id')->limit(40)->get();
+        $flash = CatalogRails::uniqueImages($endingSoon->concat($otherDeals), 12);
         $flashEndsAt = (clone $flashQuery)->min('sale_ends_at');
 
         $sponsored = CatalogRails::uniqueImages(
             $this->published()
-                ->whereHas('sponsorships', fn ($query) => $query->where('status', 'active'))
+                ->whereHas('sponsorships', fn($query) => $query->where('status', 'active'))
                 ->latest('id')
                 ->limit(40)
                 ->get(),
@@ -106,12 +109,12 @@ class CatalogController extends Controller
 
                 return ['category' => $category, 'products' => $products];
             })
-            ->filter(fn ($row) => count($row['products']) > 0)
+            ->filter(fn($row) => count($row['products']) > 0)
             ->values();
 
         $stores = Store::query()
             ->where('status', 'approved')
-            ->withCount(['products as products_count' => fn ($query) => $query->where('status', 'published')])
+            ->withCount(['products as products_count' => fn($query) => $query->where('status', 'published')])
             ->orderByDesc('rating')
             ->limit(6)
             ->get()
@@ -123,7 +126,7 @@ class CatalogController extends Controller
 
                 return ['store' => $store, 'products' => $products];
             })
-            ->filter(fn ($row) => count($row['products']) > 0)
+            ->filter(fn($row) => count($row['products']) > 0)
             ->values();
 
         return response()->json([
@@ -174,7 +177,7 @@ class CatalogController extends Controller
                 'variants',
                 'tags',
                 'category.parent',
-                'reviews' => fn ($query) => $query->where('is_hidden', false)->latest()->limit(50)->with('user:id,name'),
+                'reviews' => fn($query) => $query->where('is_hidden', false)->latest()->limit(50)->with('user:id,name'),
             ])
             ->where('slug', $slug)
             ->firstOrFail();
@@ -187,7 +190,7 @@ class CatalogController extends Controller
             ->selectRaw('rating, count(*) as total')
             ->groupBy('rating')
             ->pluck('total', 'rating');
-        $product->setAttribute('rating_breakdown', collect([5, 4, 3, 2, 1])->mapWithKeys(fn ($r) => [$r => (int) ($histogram[$r] ?? 0)]));
+        $product->setAttribute('rating_breakdown', collect([5, 4, 3, 2, 1])->mapWithKeys(fn($r) => [$r => (int) ($histogram[$r] ?? 0)]));
         $product->setAttribute('followers_count', $product->store?->followers()->count() ?? 0);
 
         return response()->json(['data' => $product]);
@@ -218,7 +221,7 @@ class CatalogController extends Controller
     {
         $query = Store::query()
             ->where('status', 'approved')
-            ->withCount(['products' => fn ($q) => $q->where('status', 'published')])
+            ->withCount(['products' => fn($q) => $q->where('status', 'published')])
             ->orderByDesc('rating');
 
         if ($request->filled('q')) {
@@ -233,7 +236,7 @@ class CatalogController extends Controller
         $store = Store::query()
             ->where('slug', $slug)
             ->where('status', 'approved')
-            ->withCount(['products' => fn ($query) => $query->where('status', 'published'), 'followers'])
+            ->withCount(['products' => fn($query) => $query->where('status', 'published'), 'followers'])
             ->firstOrFail();
 
         $this->attachScore($store);
@@ -302,7 +305,7 @@ class CatalogController extends Controller
 
         if ($request->filled('brand') && ! in_array('brand', $skip, true)) {
             $slugs = array_filter(explode(',', $request->string('brand')->toString()));
-            $query->whereHas('brand', fn ($q) => $q->whereIn('slug', $slugs));
+            $query->whereHas('brand', fn($q) => $q->whereIn('slug', $slugs));
         }
 
         if ($request->filled('q')) {
@@ -310,8 +313,8 @@ class CatalogController extends Controller
             $query->where(function ($builder) use ($q) {
                 $builder->where('name', 'like', $q)
                     ->orWhere('description', 'like', $q)
-                    ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', $q))
-                    ->orWhereHas('category', fn ($c) => $c->where('name', 'like', $q));
+                    ->orWhereHas('brand', fn($b) => $b->where('name', 'like', $q))
+                    ->orWhereHas('category', fn($c) => $c->where('name', 'like', $q));
             });
         }
 
@@ -350,7 +353,7 @@ class CatalogController extends Controller
                 $query->whereHas('variants', function ($v) use ($attribute, $values) {
                     $v->where('stock', '>', 0)->where(function ($w) use ($attribute, $values) {
                         foreach ($values as $value) {
-                            $w->orWhere('attributes->'.$attribute, $value);
+                            $w->orWhere('attributes->' . $attribute, $value);
                         }
                     });
                 });
@@ -386,7 +389,7 @@ class CatalogController extends Controller
 
         $scoped = function (array $skip) use ($request) {
             $q = Product::query()->where('status', 'published')
-                ->whereHas('store', fn ($s) => $s->where('status', 'approved'));
+                ->whereHas('store', fn($s) => $s->where('status', 'approved'));
             $this->applyFilters($q, $request, $skip);
 
             return $q;
@@ -395,22 +398,22 @@ class CatalogController extends Controller
         $brands = Brand::query()
             ->where('is_active', true)
             ->whereIn('id', $scoped(['brand'])->select('brand_id'))
-            ->withCount(['products' => fn ($q) => $q->whereIn('products.id', $scoped(['brand'])->select('id'))])
+            ->withCount(['products' => fn($q) => $q->whereIn('products.id', $scoped(['brand'])->select('id'))])
             ->orderByDesc('products_count')
             ->limit(60)
             ->get(['id', 'name', 'slug']);
 
         $priceRow = $scoped(['price'])->selectRaw('MIN(price) as min_price, MAX(price) as max_price')->toBase()->first();
 
-        $variantAttrs = fn (string $attr) => DB::table('product_variants')
+        $variantAttrs = fn(string $attr) => DB::table('product_variants')
             ->whereIn('product_id', $scoped([$attr])->select('id'))
             ->where('stock', '>', 0)
             ->pluck('attributes')
-            ->map(fn ($json) => json_decode((string) $json, true)[$attr] ?? null)
+            ->map(fn($json) => json_decode((string) $json, true)[$attr] ?? null)
             ->filter()
             ->countBy()
             ->sortDesc()
-            ->map(fn ($count, $value) => ['value' => $value, 'count' => $count])
+            ->map(fn($count, $value) => ['value' => $value, 'count' => $count])
             ->values()
             ->take(30);
 
@@ -446,12 +449,12 @@ class CatalogController extends Controller
     {
         return $query->whereNotNull('compare_at_price')
             ->whereColumn('compare_at_price', '>', 'price')
-            ->where(fn ($q) => $q->whereNull('sale_ends_at')->orWhere('sale_ends_at', '>', now()));
+            ->where(fn($q) => $q->whereNull('sale_ends_at')->orWhere('sale_ends_at', '>', now()));
     }
 
     private function like(mixed $term): string
     {
-        return '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], (string) $term).'%';
+        return '%' . str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], (string) $term) . '%';
     }
 
     private function published(): Builder
@@ -459,14 +462,14 @@ class CatalogController extends Controller
         return $this->publishedScope(
             Product::query()
                 ->with(['images', 'store', 'category', 'brand:id,name,slug'])
-                ->withExists(['sponsorships as is_sponsored' => fn ($query) => $query->where('status', 'active'), 'variants as has_variants'])
+                ->withExists(['sponsorships as is_sponsored' => fn($query) => $query->where('status', 'active'), 'variants as has_variants'])
         );
     }
 
     private function publishedScope($query)
     {
         return $query->where('products.status', 'published')
-            ->whereHas('store', fn ($q) => $q->where('status', 'approved'));
+            ->whereHas('store', fn($q) => $q->where('status', 'approved'));
     }
 
     private function attachScore(?Store $store): void

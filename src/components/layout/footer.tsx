@@ -60,8 +60,8 @@ function Newsletter() {
   }
 
   return (
-    <div className="bg-[#2b2b2b] text-white">
-      <div className="container-atelier flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
+    <div className="bg-burgundy text-white">
+      <div className="container-atelier flex flex-col gap-5 py-7 md:flex-row md:items-center md:justify-between md:py-8">
         <div className="flex items-center gap-3">
           <BrandLogo variant="footer" href="/" />
         </div>
@@ -85,7 +85,7 @@ function Newsletter() {
               Subscribe
             </button>
           </div>
-          {state && <p className={`mt-1.5 text-[12px] ${state.tone === "ok" ? "text-emerald-300" : "text-red-300"}`}>{state.text}</p>}
+          {state && <p className={`mt-2 text-[12px] ${state.tone === "ok" ? "text-white" : "text-white/80"}`}>{state.text}</p>}
         </form>
       </div>
     </div>
@@ -98,8 +98,8 @@ export function Footer() {
   return (
     <footer className="mt-auto">
       <Newsletter />
-      <div className="bg-[#313133] text-white/85">
-        <div className="container-atelier grid grid-cols-2 gap-8 py-10 text-[13px] md:grid-cols-4">
+      <div className="bg-burgundy-deep text-white/85">
+        <div className="container-atelier grid grid-cols-2 gap-x-6 gap-y-8 py-10 text-[13px] md:grid-cols-4 md:gap-10 md:py-12">
           {columns.map((col) => (
             <div key={col.title}>
               <h3 className="mb-3 font-sans text-[13px] font-bold tracking-normal text-white uppercase">{col.title}</h3>
@@ -157,7 +157,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="bg-burgundy-deep py-3 text-center text-[11px] text-white/70">
+        <div className="border-t border-white/10 py-3.5 text-center text-[11px] text-white/70">
           © <CurrentYear /> Atelier Nigeria. All rights reserved.
         </div>
       </div>

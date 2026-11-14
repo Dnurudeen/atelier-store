@@ -10,7 +10,15 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const [banners, feed, categories] = await Promise.all([getBanners(), getHomeFeed(), getCategories()]);
-  const flash = feed.flash.length ? feed.flash : feed.deals;
+  const flashIds = new Set(feed.flash.map((product) => product.id));
+  const flash = [...feed.flash];
+  for (const deal of feed.deals) {
+    if (flash.length >= 12) break;
+    if (!flashIds.has(deal.id)) {
+      flash.push(deal);
+      flashIds.add(deal.id);
+    }
+  }
   const nothing =
     !feed.deals.length && !feed.top_sellers.length && !feed.new_arrivals.length && !feed.categories.length;
 

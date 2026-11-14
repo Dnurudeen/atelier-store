@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils";
 function grade(value: number | null | undefined, invert = false) {
   if (value == null) return { label: "Not enough data", icon: CircleMinus, tone: "text-muted" };
   const v = invert ? 1 - value : value;
-  if (v >= 0.9) return { label: "Excellent", icon: CircleCheck, tone: "text-emerald-600" };
-  if (v >= 0.75) return { label: "Good", icon: CircleCheck, tone: "text-emerald-600" };
-  if (v >= 0.5) return { label: "Average", icon: CircleMinus, tone: "text-amber-500" };
+  if (v >= 0.9) return { label: "Excellent", icon: CircleCheck, tone: "text-burgundy" };
+  if (v >= 0.75) return { label: "Good", icon: CircleCheck, tone: "text-burgundy" };
+  if (v >= 0.5) return { label: "Average", icon: CircleMinus, tone: "text-muted" };
   return { label: "Poor", icon: CircleX, tone: "text-crimson" };
 }
 
@@ -35,11 +35,11 @@ export function SellerCard({ store, followers = 0 }: { store: Store; followers?:
 
   return (
     <section className="rounded-md bg-white">
-      <Link href={`/makers/${store.slug}`} className="flex items-center justify-between border-b border-border px-3 py-2.5 hover:bg-surface">
+      <Link href={`/makers/${store.slug}`} className="flex items-center justify-between border-b border-border px-4 py-3 hover:bg-surface">
         <h2 className="text-[13px] font-bold tracking-wide uppercase">Seller Information</h2>
         <ChevronRight size={16} className="text-muted" />
       </Link>
-      <div className="p-3 text-[13px]">
+      <div className="p-4 text-[13px]">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <Link href={`/makers/${store.slug}`} className="block truncate font-semibold hover:text-burgundy">

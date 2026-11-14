@@ -28,8 +28,8 @@ export function DeliveryCard({ store }: { store?: Store | null }) {
 
   return (
     <section className="rounded-md bg-white">
-      <h2 className="border-b border-border px-3 py-2.5 text-[13px] font-bold tracking-wide uppercase">Delivery &amp; Returns</h2>
-      <div className="space-y-3 p-3 text-[13px]">
+      <h2 className="border-b border-border px-4 py-3 text-[13px] font-bold tracking-wide uppercase">Delivery &amp; Returns</h2>
+      <div className="space-y-3.5 p-4 text-[13px]">
         <label className="block">
           <span className="mb-1 flex items-center gap-1 font-semibold">
             <MapPin size={14} className="text-burgundy" /> Choose your location

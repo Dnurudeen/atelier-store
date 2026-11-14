@@ -123,7 +123,7 @@ export function ProductInfo({ product }: { product: Product }) {
   const totalRatings = Object.values(breakdown).reduce((a, b) => a + Number(b), 0) || Number(product.reviews_count ?? 0);
 
   const card = "rounded-md bg-white";
-  const heading = "flex items-center gap-2 border-b border-border px-3 py-2.5 font-sans text-[15px] font-bold tracking-normal md:px-4";
+  const heading = "flex items-center gap-2 border-b border-border px-4 py-3 font-sans text-[15px] font-bold tracking-normal md:px-5";
 
   return (
     <div className="space-y-3">
@@ -190,7 +190,7 @@ export function ProductInfo({ product }: { product: Product }) {
             </button>
           )}
         </h2>
-        <div className="grid gap-5 p-3 md:grid-cols-[220px_1fr] md:p-4">
+        <div className="grid gap-6 p-4 md:grid-cols-[220px_1fr] md:p-5">
           <div>
             <p className="text-[12px] font-bold tracking-wide uppercase">Verified ratings ({totalRatings})</p>
             <div className="mt-2 rounded-md bg-surface p-3 text-center">
@@ -208,10 +208,10 @@ export function ProductInfo({ product }: { product: Product }) {
                 return (
                   <li key={n} className="flex items-center gap-2">
                     <span className="w-3">{n}</span>
-                    <Star size={11} className="fill-amber-400 text-amber-400" />
+                    <Star size={11} className="fill-crimson text-crimson" />
                     <span className="text-muted">({count})</span>
                     <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
-                      <span className="block h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                      <span className="block h-full rounded-full bg-crimson" style={{ width: `${pct}%` }} />
                     </span>
                   </li>
                 );
@@ -255,7 +255,7 @@ export function ProductInfo({ product }: { product: Product }) {
                     <p className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px] text-muted">
                       {review.created_at && <span>{new Date(review.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</span>}
                       <span>by {review.user?.name?.split(" ")[0] ?? "Customer"}</span>
-                      <span className="inline-flex items-center gap-1 font-medium text-emerald-700">✓ Verified purchase</span>
+                      <span className="inline-flex items-center gap-1 font-medium text-burgundy">✓ Verified purchase</span>
                     </p>
                     {review.vendor_reply && (
                       <div className="mt-2 rounded-md bg-surface px-3 py-2 text-[13px]">

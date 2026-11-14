@@ -76,16 +76,16 @@ async function ProductDetail({ params }: PageProps) {
   return (
     <div id="top" className="bg-[var(--page-bg)] pb-24 md:pb-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <div className="container-atelier pt-3">
+      <div className="container-atelier pt-4">
         <Breadcrumbs items={crumbs} />
 
-        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="grid gap-4 rounded-md bg-white p-3 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] md:p-4">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid gap-5 rounded-md bg-white p-3.5 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] md:p-5">
             <ProductGallery product={product} />
             <ProductPurchase product={product} />
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <DeliveryCard store={product.store} />
             {product.store && <SellerCard store={product.store} followers={product.followers_count ?? 0} />}
           </div>
@@ -94,8 +94,8 @@ async function ProductDetail({ params }: PageProps) {
 
       <ProductRail title="You may also like" products={related.similar} tone="light" href={product.category ? `/category/${product.category.slug}` : undefined} />
 
-      <div className="container-atelier pt-3">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="container-atelier pt-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <ProductInfo product={product} />
           <aside className="hidden lg:block">
             <StickyBuyBox product={product} />

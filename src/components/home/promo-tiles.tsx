@@ -18,26 +18,26 @@ export function PromoTiles({ banners }: { banners: Banner[] }) {
   const custom = banners.filter((b) => b.is_active && b.placement === "tile");
 
   return (
-    <section className="pt-2 md:pt-3">
+    <section className="pt-4">
       <div className="container-atelier">
-        <div className="rounded-md bg-white p-2 md:p-3">
-          <div className="mobile-rail flex md:grid md:grid-cols-7 md:gap-3">
+        <div className="rounded-md bg-white px-3 py-3.5 md:px-4 md:py-4">
+          <div className="mobile-rail flex md:grid md:grid-cols-7 md:gap-4">
             {custom.length
               ? custom.map((b) => (
                   <Link key={b.id} href={b.cta_url || "/shop"} className="group w-[96px] text-center md:w-auto">
                     <span className="relative block aspect-square overflow-hidden rounded-md bg-surface">
                       <AppImage src={b.image} alt="" fill sizes="140px" frameClassName="absolute inset-0" className="transition group-hover:scale-105" />
                     </span>
-                    <span className="mt-1.5 block truncate text-[12px] font-medium">{b.title}</span>
+                    <span className="mt-2 block truncate text-[12px] font-medium">{b.title}</span>
                   </Link>
                 ))
               : DEFAULT_TILES.map(({ title, caption, href, icon: Icon, tone }) => (
                   <Link key={title} href={href} className="group w-[96px] text-center md:w-auto">
-                    <span className={`flex aspect-square flex-col items-center justify-center gap-1 rounded-md bg-gradient-to-br ${tone} p-2 text-white transition group-hover:brightness-110`}>
+                    <span className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-md bg-gradient-to-br ${tone} p-2.5 text-white transition group-hover:brightness-110`}>
                       <Icon className="h-7 w-7 md:h-9 md:w-9" strokeWidth={1.6} aria-hidden />
                       <span className="text-[10px] font-medium text-white/85 md:text-[11px]">{caption}</span>
                     </span>
-                    <span className="mt-1.5 block truncate text-[12px] font-medium text-foreground/90">{title}</span>
+                    <span className="mt-2 block truncate text-[12px] font-medium text-foreground/90">{title}</span>
                   </Link>
                 ))}
           </div>

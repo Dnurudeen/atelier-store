@@ -8,7 +8,7 @@ import type { Product } from "@/lib/api";
 import { AppImage } from "@/components/ui/app-image";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { toast } from "@/components/ui/toast";
-import { discountPercent, formatNaira, cn } from "@/lib/utils";
+import { cn, discountPercent, formatNaira } from "@/lib/utils";
 import { useIsSaved, useToggleWishlist } from "@/lib/wishlist";
 import { useCartStore } from "@/store/cart";
 
@@ -16,11 +16,14 @@ export function ProductCard({
   product,
   compact = false,
   showStockBar = false,
+  plain = false,
 }: {
   product: Product;
   compact?: boolean;
-  /** Flash-sale style "items left" progress bar. */
+  /** Flash-sale style stock line and price badge. */
   showStockBar?: boolean;
+  /** No white card fill, so the page background shows through. */
+  plain?: boolean;
   /** @deprecated kept for older call sites */
   index?: number;
 }) {
@@ -54,7 +57,12 @@ export function ProductCard({
   }
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-md bg-white transition hover:z-10 hover:shadow-[0_2px_12px_rgba(0,0,0,0.12)]">
+    <article
+      className={cn(
+        "group relative flex h-full flex-col overflow-hidden rounded-md transition hover:z-10",
+        plain ? "bg-transparent" : "bg-white hover:shadow-[0_2px_12px_rgba(0,0,0,0.12)]"
+      )}
+    >
       <Link href={href} className="relative block aspect-square overflow-hidden bg-surface" prefetch={false}>
         <AppImage
           src={image}
@@ -64,7 +72,7 @@ export function ProductCard({
           className="transition duration-500 group-hover:scale-[1.04]"
           frameClassName="absolute inset-0"
         />
-        {off && (
+        {off && !showStockBar && (
           <span className="absolute top-1.5 right-1.5 z-10 rounded-sm bg-[#fde8e9] px-1.5 py-0.5 text-[11px] font-bold text-crimson">
             -{off}%
           </span>
@@ -91,7 +99,21 @@ export function ProductCard({
         <Heart size={14} className={saved ? "fill-crimson text-crimson" : undefined} />
       </button>
 
+      {showStockBar && stock > 0 && (
+        <button
+          type="button"
+          onClick={onQuickAdd}
+          className="absolute top-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-white shadow transition hover:bg-crimson"
+          aria-label={hasOptions ? `Choose options for ${product.name}` : `Add ${product.name} to cart`}
+        >
+          <Plus size={16} />
+        </button>
+      )}
+
       <div className="flex flex-1 flex-col px-2 pt-2 pb-2.5">
+        {showStockBar && (
+          <p className="mb-0.5 text-[11px] text-muted">{stock <= 0 ? "Out of stock" : stock <= 8 ? `${stock} items left` : `${stock} items in stock`}</p>
+        )}
         <Link href={href} prefetch={false} className="line-clamp-2 min-h-[2.5em] text-[12px] leading-snug text-foreground/90 md:text-[13px]">
           {product.name}
         </Link>
@@ -107,14 +129,17 @@ export function ProductCard({
           <div className="min-w-0">
             <p className="truncate text-[15px] font-bold text-foreground md:text-base">{formatNaira(product.price)}</p>
             {off ? (
-              <p className="truncate text-[11px] text-muted line-through">{formatNaira(product.compare_at_price!)}</p>
+              <p className="flex items-center gap-1.5 truncate text-[11px] text-muted">
+                <span className="truncate line-through">{formatNaira(product.compare_at_price!)}</span>
+                {showStockBar && <span className="shrink-0 rounded-sm bg-crimson px-1 py-px text-[10px] font-bold text-white">-{off}%</span>}
+              </p>
             ) : (
               <p className="text-[11px] text-transparent select-none" aria-hidden>
                 .
               </p>
             )}
           </div>
-          {stock > 0 && (
+          {stock > 0 && !showStockBar && (
             <button
               type="button"
               onClick={onQuickAdd}
@@ -125,18 +150,6 @@ export function ProductCard({
             </button>
           )}
         </div>
-
-        {showStockBar && stock > 0 && (
-          <div className="mt-1.5">
-            <p className="text-[10px] text-muted">{stock} items left</p>
-            <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-border">
-              <div
-                className={cn("h-full rounded-full", stock <= 5 ? "bg-crimson" : "bg-amber-500")}
-                style={{ width: `${Math.max(8, Math.min(100, (stock / 30) * 100))}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </article>
   );

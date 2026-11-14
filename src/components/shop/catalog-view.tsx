@@ -33,7 +33,7 @@ export function CatalogView({
 
   return (
     <div className="bg-[var(--page-bg)] pb-12">
-      <div className="container-atelier pt-3">
+      <div className="container-atelier pt-4">
         <Breadcrumbs items={crumbs} />
 
         {subcategories.length > 0 && (
@@ -52,7 +52,7 @@ export function CatalogView({
           <CatalogFilterSidebar categories={categories} current={current} parent={parent} facets={facets} />
 
           <section className="min-w-0 flex-1 rounded-md bg-white">
-            <header className="space-y-2.5 border-b border-border px-3 py-3 md:px-4">
+            <header className="space-y-3 border-b border-border px-3.5 py-4 md:px-5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <h1 className="font-sans text-lg font-bold tracking-normal md:text-xl">{title}</h1>
                 <p className="text-[13px] text-muted">
@@ -86,7 +86,7 @@ export function CatalogView({
               </div>
             )}
 
-            <div className="border-t border-border px-3 py-4">
+            <div className="border-t border-border px-4 py-5">
               <Pagination current={meta.current_page} last={meta.last_page} basePath={basePath} query={query} />
             </div>
           </section>
@@ -99,7 +99,7 @@ export function CatalogView({
 export function CatalogSkeleton() {
   return (
     <div className="bg-[var(--page-bg)] pb-12">
-      <div className="container-atelier pt-3">
+      <div className="container-atelier pt-4">
         <div className="skeleton h-3 w-40 rounded" />
         <div className="mt-3 flex gap-3">
           <div className="hidden h-[600px] w-[250px] rounded-md bg-white lg:block" />

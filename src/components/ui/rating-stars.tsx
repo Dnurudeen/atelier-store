@@ -20,7 +20,7 @@ export function RatingStars({
             <Star size={size} className="absolute inset-0 fill-border text-border" aria-hidden />
             {fill > 0 && (
               <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-                <Star size={size} className="fill-amber-400 text-amber-400" aria-hidden />
+                <Star size={size} className="fill-crimson text-crimson" aria-hidden />
               </span>
             )}
           </span>
