@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
-import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import type { Category } from "@/lib/api";
 import type { Facets } from "@/lib/catalog";
 import { listValues, SORT_OPTIONS, toggleListValue, withParams } from "@/lib/catalog-query";
@@ -35,12 +35,12 @@ function useFilterNav() {
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-border py-3 last:border-0">
+    <div className="border-b border-border py-3.5 last:border-0">
       <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between text-left" aria-expanded={open}>
-        <span className="text-[12px] font-bold tracking-wide uppercase">{title}</span>
+        <span className="text-[11px] font-bold tracking-[0.08em] text-foreground/85 uppercase">{title}</span>
         <ChevronDown size={15} className={cn("text-muted transition-transform", open && "rotate-180")} />
       </button>
-      {open && <div className="mt-2.5">{children}</div>}
+      {open && <div className="mt-3">{children}</div>}
     </div>
   );
 }
@@ -104,12 +104,15 @@ function FilterPanel({ categories, current, parent, facets }: Props) {
       {(facets?.brands?.length ?? 0) > 0 && (
         <Section title="Brand">
           {(facets?.brands.length ?? 0) > 8 && (
-            <input
-              value={brandSearch}
-              onChange={(e) => setBrandSearch(e.target.value)}
-              placeholder="Search brands"
-              className="mb-2 h-8 w-full rounded-md border border-border px-2.5 text-[13px] outline-none focus:border-burgundy"
-            />
+            <label className="mb-2.5 flex h-9 items-center gap-2 rounded-md border border-border px-2.5 focus-within:border-burgundy">
+              <Search size={14} className="shrink-0 text-muted" />
+              <input
+                value={brandSearch}
+                onChange={(e) => setBrandSearch(e.target.value)}
+                placeholder="Search"
+                className="w-full bg-transparent text-[13px] outline-none"
+              />
+            </label>
           )}
           <div className="max-h-52 overflow-y-auto pr-1">
             {visibleBrands.map((b) => (
@@ -122,7 +125,7 @@ function FilterPanel({ categories, current, parent, facets }: Props) {
       )}
 
       <Section title="Price (₦)">
-        <form onSubmit={applyPrice} className="space-y-2">
+        <form onSubmit={applyPrice} className="space-y-2.5">
           {facets?.price && facets.price.max > 0 && (
             <p className="text-[11px] text-muted">
               {formatNaira(facets.price.min)} – {formatNaira(facets.price.max)}
@@ -132,10 +135,10 @@ function FilterPanel({ categories, current, parent, facets }: Props) {
             <input inputMode="numeric" value={min} onChange={(e) => setMin(e.target.value.replace(/\D/g, ""))} placeholder="Min" aria-label="Minimum price" className="h-9 w-full min-w-0 rounded-md border border-border px-2.5 text-[13px] outline-none focus:border-burgundy" />
             <span className="text-muted">–</span>
             <input inputMode="numeric" value={max} onChange={(e) => setMax(e.target.value.replace(/\D/g, ""))} placeholder="Max" aria-label="Maximum price" className="h-9 w-full min-w-0 rounded-md border border-border px-2.5 text-[13px] outline-none focus:border-burgundy" />
+            <button type="submit" className="shrink-0 px-1 text-[13px] font-bold text-crimson uppercase hover:text-crimson-hover">
+              Apply
+            </button>
           </div>
-          <button type="submit" className="h-8 w-full rounded-md border border-crimson text-[12px] font-bold text-crimson uppercase hover:bg-crimson hover:text-white">
-            Apply
-          </button>
         </form>
       </Section>
 
@@ -217,7 +220,10 @@ function FilterPanel({ categories, current, parent, facets }: Props) {
 /** Desktop sidebar. */
 export function CatalogFilterSidebar(props: Props) {
   return (
-    <aside className="hidden w-[250px] shrink-0 self-start rounded-md bg-white px-4 py-1 lg:block" aria-label="Filters">
+    <aside
+      className="sticky top-[7.5rem] hidden w-[270px] shrink-0 self-start overflow-hidden rounded-md bg-white px-4 py-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:block"
+      aria-label="Filters"
+    >
       <FilterPanel {...props} />
     </aside>
   );
@@ -231,7 +237,7 @@ export function CatalogToolbar(props: Props & { total: number }) {
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -239,12 +245,12 @@ export function CatalogToolbar(props: Props & { total: number }) {
         >
           <SlidersHorizontal size={15} /> Filter
         </button>
-        <label className="ml-auto inline-flex items-center gap-2 text-[13px]">
-          <span className="hidden text-muted sm:inline">Sort by:</span>
+        <label className="inline-flex items-center gap-2 text-[13px]">
+          <span className="text-muted">Sort by:</span>
           <select
             value={sort}
             onChange={(e) => set({ sort: e.target.value === "popular" ? null : e.target.value })}
-            className="h-9 rounded-md border border-border bg-white px-2 text-[13px] font-semibold outline-none focus:border-burgundy"
+            className="h-9 rounded-md border border-border bg-white px-2.5 text-[13px] font-semibold outline-none focus:border-burgundy"
             aria-label="Sort products"
           >
             {SORT_OPTIONS.map((o) => (

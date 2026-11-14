@@ -60,7 +60,9 @@ export function ProductCard({
     <article
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-md transition hover:z-10",
-        plain ? "bg-transparent" : "bg-white hover:shadow-[0_2px_12px_rgba(0,0,0,0.12)]"
+        plain
+          ? "bg-transparent"
+          : "border border-transparent bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-burgundy/35 hover:shadow-[0_2px_12px_rgba(0,0,0,0.1)]"
       )}
     >
       <Link href={href} className="relative block aspect-square overflow-hidden bg-surface" prefetch={false}>
