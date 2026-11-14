@@ -35,7 +35,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   return (
     <>
       <Header />
-      <main className={showTabBar ? "pb-mobile-tab flex-1 md:pb-0" : "flex-1"}>{children}</main>
+      <main className={showTabBar ? "pb-mobile-tab min-h-0 flex-1 md:pb-0" : "min-h-0 flex-1"}>{children}</main>
       <Footer />
       {showTabBar && <MobileTabBar />}
     </>

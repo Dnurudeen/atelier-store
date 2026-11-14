@@ -45,7 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
       style={{ colorScheme: "light" }}
     >
-      <body className="flex min-h-full flex-col bg-background text-foreground">
+      <body className="flex min-h-dvh flex-col bg-background text-foreground">
         <Providers>
           <AppChrome>{children}</AppChrome>
         </Providers>

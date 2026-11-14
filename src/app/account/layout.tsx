@@ -53,7 +53,7 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
 
   return (
     <RequireAuth>
-      <div className="bg-[var(--page-bg)] pb-12">
+      <div className="min-h-full bg-[var(--page-bg)] pb-12">
         <div className="container-atelier grid gap-3 pt-4 md:grid-cols-[260px_minmax(0,1fr)]">
           <aside className={cn("h-fit overflow-hidden rounded-md bg-white", !isHome && "hidden md:block")}>
             <nav aria-label="My account">

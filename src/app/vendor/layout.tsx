@@ -104,7 +104,7 @@ function SellerFrame({ children }: { children: ReactNode }) {
 
 function NoStore() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-[var(--page-bg)] p-6">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-[var(--page-bg)] p-6">
       <div className="max-w-md rounded-md bg-white p-8 text-center">
         <h1 className="font-display text-2xl text-burgundy">Open your store first</h1>
         <p className="mt-2 text-sm text-muted">This account doesn&apos;t have a store yet. Set one up to start selling on Atelier.</p>

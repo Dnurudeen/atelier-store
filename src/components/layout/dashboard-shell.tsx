@@ -61,6 +61,21 @@ export function DashboardShell({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Keep the console inside the viewport. Without this, short pages leave a
+  // scrollable white body strip under the shell (and the sidebar stops mid-screen).
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, []);
+
   const isActive = (href: string) => (href === root ? pathname === href : pathname === href || pathname.startsWith(`${href}/`));
   const current = sections.flatMap((s) => s.items).filter((i) => isActive(i.href)).sort((a, b) => b.href.length - a.href.length)[0];
 
@@ -124,8 +139,8 @@ export function DashboardShell({
   );
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-[var(--page-bg)] print:block print:h-auto print:overflow-visible print:bg-white">
-      <aside className="hidden h-full w-64 shrink-0 flex-col bg-burgundy text-white md:flex print:hidden">{sidebar}</aside>
+    <div className="fixed inset-0 z-40 flex overflow-hidden bg-[var(--page-bg)] print:static print:block print:h-auto print:overflow-visible print:bg-white">
+      <aside className="hidden h-full w-64 shrink-0 flex-col self-stretch bg-burgundy text-white md:flex print:hidden">{sidebar}</aside>
 
       {open && (
         <div className="fixed inset-0 z-[70] md:hidden">
@@ -154,7 +169,7 @@ export function DashboardShell({
             </span>
           )}
         </header>
-        <main className="min-h-0 flex-1 overflow-y-auto print:overflow-visible">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-[var(--page-bg)] print:overflow-visible">
           {banner}
           <div className="p-3 md:p-6">{children}</div>
         </main>
