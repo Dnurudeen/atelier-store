@@ -69,11 +69,19 @@ export async function getBanners(): Promise<Banner[]> {
   }
 }
 
+function endOfTodayLagosIso() {
+  const now = new Date();
+  // Africa/Lagos is UTC+1 year-round.
+  const lagos = new Date(now.getTime() + 60 * 60 * 1000);
+  return new Date(Date.UTC(lagos.getUTCFullYear(), lagos.getUTCMonth(), lagos.getUTCDate(), 22, 59, 59)).toISOString();
+}
+
 function demoHomeFeed(): HomeFeed {
   const deals = demoProducts.filter((p) => Number(p.compare_at_price) > Number(p.price)).slice(0, 12);
   return {
     deals,
     flash: deals,
+    flash_ends_at: deals.length ? endOfTodayLagosIso() : null,
     sponsored: demoProducts.filter((p) => p.is_sponsored).slice(0, 12),
     top_sellers: demoProducts.slice(0, 12),
     new_arrivals: [...demoProducts].reverse().slice(0, 12),

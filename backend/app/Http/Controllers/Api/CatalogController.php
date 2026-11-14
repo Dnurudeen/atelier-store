@@ -72,7 +72,12 @@ class CatalogController extends Controller
         $endingSoon = (clone $flashQuery)->orderBy('sale_ends_at')->limit(40)->get();
         $otherDeals = $this->onSale($this->published())->latest('id')->limit(40)->get();
         $flash = CatalogRails::uniqueImages($endingSoon->concat($otherDeals), 12);
+        // Prefer the soonest real sale end. If deals have no timer (common on older data),
+        // fall back to end of today in Lagos so the Flash Sales rail still shows a countdown.
         $flashEndsAt = (clone $flashQuery)->min('sale_ends_at');
+        if (! $flashEndsAt && count($flash) > 0) {
+            $flashEndsAt = now('Africa/Lagos')->endOfDay()->utc();
+        }
 
         $sponsored = CatalogRails::uniqueImages(
             $this->published()

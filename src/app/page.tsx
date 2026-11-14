@@ -44,11 +44,11 @@ export default async function HomePage() {
 
       <ProductRail
         title="Flash Sales"
-        subtitle={feed.flash_ends_at ? undefined : "Limited-time prices"}
+        subtitle={flash.length && !feed.flash_ends_at ? "Limited-time prices" : undefined}
         href="/shop?on_sale=1&sort=discount"
         products={flash}
         tone="crimson"
-        endsAt={feed.flash.length ? feed.flash_ends_at : null}
+        endsAt={flash.length ? feed.flash_ends_at : null}
         showStockBar
       />
 
