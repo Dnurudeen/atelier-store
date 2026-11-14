@@ -126,7 +126,7 @@ export function ProductPurchase({ product, onVariantChange }: { product: Product
           )}
         </div>
         <p className={cn("mt-1 text-[12px]", stock <= 0 ? "text-crimson" : stock <= 5 ? "font-semibold text-crimson" : "text-muted")}>
-          {needsChoice ? "Select options to see availability" : stock <= 0 ? "Out of stock" : stock <= 5 ? `Only ${stock} left — order soon` : "In stock"}
+          {needsChoice ? "Select options to see availability" : stock <= 0 ? "Out of stock" : stock <= 5 ? `Only ${stock} left. Order soon` : "In stock"}
         </p>
         {product.store?.shipping_fee !== undefined && (
           <p className="mt-0.5 text-[12px] text-muted">

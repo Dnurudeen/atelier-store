@@ -58,7 +58,7 @@ export default function ContactPage() {
         {sent ? (
           <div className="rounded-md border border-emerald-600/20 bg-emerald-50 p-6 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
-            <p className="mt-2 font-semibold">Message sent — ticket #{sent}</p>
+            <p className="mt-2 font-semibold">Message sent. Ticket #{sent}</p>
             <p className="mt-1 text-sm text-muted">We&apos;ll reply to {email}. For order issues you can also check your order page for updates.</p>
           </div>
         ) : (
@@ -94,7 +94,7 @@ export default function ContactPage() {
             <Mail size={18} className="shrink-0 text-burgundy" /> hello@atelierstore.studio
           </p>
           <p className="flex gap-2">
-            <Clock size={18} className="shrink-0 text-burgundy" /> Mon–Sat, 8am–8pm WAT
+            <Clock size={18} className="shrink-0 text-burgundy" /> Mon to Sat, 8am to 8pm WAT
           </p>
           <p className="flex gap-2">
             <MessageCircle size={18} className="shrink-0 text-burgundy" />

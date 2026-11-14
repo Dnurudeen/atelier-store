@@ -98,7 +98,7 @@ export default function AdminOrderDetail() {
                 </Button>
               ))}
               {sub.refund_status === "pending" && (
-                <Button size="sm" onClick={() => action.mutate({ path: `/sub-orders/${sub.id}`, body: { refund_status: "refunded" }, success: "Refund marked as sent — customer notified" })}>
+                <Button size="sm" onClick={() => action.mutate({ path: `/sub-orders/${sub.id}`, body: { refund_status: "refunded" }, success: "Refund marked as sent. Customer notified" })}>
                   Mark refunded
                 </Button>
               )}

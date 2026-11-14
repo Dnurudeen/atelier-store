@@ -70,7 +70,7 @@ export default function StatementsPage() {
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td className="px-4 py-2.5">
-                      {formatDate(r.period_start)} – {formatDate(r.period_end)}
+                      {formatDate(r.period_start)} to {formatDate(r.period_end)}
                     </td>
                     <td className="px-4 py-2.5">{formatNaira(r.sales)}</td>
                     <td className="px-4 py-2.5">-{formatNaira(r.commission)}</td>

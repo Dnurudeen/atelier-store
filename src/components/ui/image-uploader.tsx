@@ -153,7 +153,7 @@ export function ImageUploader({
           e.target.value = "";
         }}
       />
-      <p className="mt-1.5 text-[11px] text-muted">{hint ?? `JPG, PNG or WebP, up to ${MAX_MB} MB, at least 200×200 px. ${max > 1 ? "The first image is the main photo — drag to reorder." : ""}`}</p>
+      <p className="mt-1.5 text-[11px] text-muted">{hint ?? `JPG, PNG or WebP, up to ${MAX_MB} MB, at least 200×200 px. ${max > 1 ? "The first image is the main photo. Drag to reorder." : ""}`}</p>
       {error && <p className="mt-1 text-xs text-crimson">{error}</p>}
     </div>
   );

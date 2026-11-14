@@ -86,14 +86,14 @@ class MarketplaceSeeder extends Seeder
         }
 
         $vendors = [
-            ['Adebayo Studio', 'adebayo-studio', 'Lagos', 'Contemporary oil paintings exploring Nigerian urban life.', 'vendor1@atelier.ng'],
-            ['Clay & Ember', 'clay-and-ember', 'Abuja', 'Hand thrown ceramics and sculptural vessels.', 'vendor2@atelier.ng'],
-            ['Okafor Leather', 'okafor-leather', 'Aba', 'Bespoke leather footwear and bags crafted in Aba.', 'vendor3@atelier.ng'],
-            ['Heritage Weave', 'heritage-weave', 'Ibadan', 'Handwoven textiles and ready to wear fashion.', 'vendor4@atelier.ng'],
-            ['Bronze Path', 'bronze-path', 'Benin City', 'Sculpture and metal reliefs rooted in Benin craft.', 'vendor5@atelier.ng'],
-            ['Cedar & Loom', 'cedar-and-loom', 'Enugu', 'Furniture and home decor with warm timber tones.', 'vendor6@atelier.ng'],
-            ['Indigo Atelier', 'indigo-atelier', 'Abeokuta', 'Adire fashion and textile art.', 'vendor7@atelier.ng'],
-            ['Earth Form Lab', 'earth-form-lab', 'Jos', 'Experimental ceramics and clay installations.', 'vendor8@atelier.ng'],
+            ['Adebayo Studio', 'adebayo-studio', 'Lagos', 'Oil paintings of Lagos streets, markets and quiet evenings.', 'vendor1@atelier.ng'],
+            ['Clay & Ember', 'clay-and-ember', 'Abuja', 'Hand thrown ceramics and sculptural vessels from Abuja.', 'vendor2@atelier.ng'],
+            ['Okafor Leather', 'okafor-leather', 'Aba', 'Leather shoes and bags made in Aba workshops.', 'vendor3@atelier.ng'],
+            ['Heritage Weave', 'heritage-weave', 'Ibadan', 'Handwoven textiles and ready to wear fashion from Ibadan.', 'vendor4@atelier.ng'],
+            ['Bronze Path', 'bronze-path', 'Benin City', 'Sculpture and metal reliefs from Benin craft traditions.', 'vendor5@atelier.ng'],
+            ['Cedar & Loom', 'cedar-and-loom', 'Enugu', 'Timber furniture and home pieces with warm finishes.', 'vendor6@atelier.ng'],
+            ['Indigo Atelier', 'indigo-atelier', 'Abeokuta', 'Adire fashion and textile art from Abeokuta.', 'vendor7@atelier.ng'],
+            ['Earth Form Lab', 'earth-form-lab', 'Jos', 'Clay vessels and ceramic pieces from Jos studios.', 'vendor8@atelier.ng'],
         ];
 
         $stores = [];
@@ -186,10 +186,10 @@ class MarketplaceSeeder extends Seeder
                     'name' => $name,
                     'sku' => strtoupper(Str::substr(Str::slug($store->name, ''), 0, 4)).'-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
                     'condition' => 'new',
-                    'description' => "Crafted with care by {$store->name}, a verified Atelier Nigeria maker in {$store->location}.\n\nEvery piece is made by hand, so small variations in colour and texture are part of its character. It ships carefully packed with a certificate of authenticity.",
+                    'description' => "Made by {$store->name}, a verified Atelier Nigeria maker in {$store->location}.\n\nEach piece is handmade, so small differences in colour and texture are normal. It ships well packed with a certificate of authenticity.",
                     'key_features' => $this->featuresFor($catSlug),
                     'whats_in_box' => "1 × {$name}\n1 × Certificate of authenticity",
-                    'warranty' => '7-day return for items that arrive damaged',
+                    'warranty' => '7 day return for items that arrive damaged',
                     'specs' => $this->specsFor($catSlug),
                     'price' => $price,
                     'compare_at_price' => $onSale ? (int) ($price * ($i % 7 === 0 ? 1.4 : 1.15)) : null,
@@ -242,22 +242,22 @@ class MarketplaceSeeder extends Seeder
         $this->seedDeliveredOrder($customer, $seeded);
 
         Banner::updateOrCreate(
-            ['title' => 'Creators and Handcrafted Excellence'],
+            ['title' => 'Made by Nigerian hands'],
             [
-                'subtitle' => "Nigeria's marketplace for artisans, painters, and makers.",
+                'subtitle' => 'Art, fashion, ceramics and more from makers across the country.',
                 'image' => '/media/hero/hero-1.jpg',
-                'cta_label' => 'Shop the collection',
+                'cta_label' => 'Shop now',
                 'cta_url' => '/shop',
                 'is_active' => true,
                 'sort_order' => 1,
             ]
         );
         Banner::updateOrCreate(
-            ['title' => 'Meet the Makers Behind Every Piece'],
+            ['title' => 'Meet the makers'],
             [
-                'subtitle' => 'Discover original art, ceramics, leather, and furniture.',
+                'subtitle' => 'Original art, ceramics, leather and furniture from real studios.',
                 'image' => '/media/hero/hero-2.jpg',
-                'cta_label' => 'Explore artisans',
+                'cta_label' => 'Browse makers',
                 'cta_url' => '/makers',
                 'is_active' => true,
                 'sort_order' => 2,
@@ -286,7 +286,7 @@ class MarketplaceSeeder extends Seeder
         Banner::updateOrCreate(
             ['title' => 'Join as a Vendor Today'],
             [
-                'subtitle' => 'Turn your craft into a thriving business on Atelier Nigeria.',
+                'subtitle' => 'Open a store and sell your craft to buyers nationwide.',
                 'image' => '/media/hero/hero-3.jpg',
                 'cta_label' => 'Become a vendor',
                 'cta_url' => '/become-a-vendor',
@@ -300,9 +300,9 @@ class MarketplaceSeeder extends Seeder
     {
         $rows = match ($category) {
             'fine-art' => [['Medium', 'Oil on stretched canvas'], ['Dimensions', '60 × 80 cm'], ['Framing', 'Unframed, ready to hang']],
-            'sculpture' => [['Material', 'Hand-carved hardwood'], ['Height', '45 cm'], ['Finish', 'Natural oil']],
+            'sculpture' => [['Material', 'Hand carved hardwood'], ['Height', '45 cm'], ['Finish', 'Natural oil']],
             'fashion' => [['Fabric', '100% cotton adire'], ['Fit', 'Regular'], ['Care', 'Hand wash cold']],
-            'leatherwork' => [['Material', 'Full-grain cow leather'], ['Lining', 'Cotton'], ['Made in', 'Aba, Abia State']],
+            'leatherwork' => [['Material', 'Full grain cow leather'], ['Lining', 'Cotton'], ['Made in', 'Aba, Abia State']],
             'ceramics' => [['Material', 'Stoneware clay'], ['Height', '18 cm'], ['Food safe', 'Yes']],
             default => [['Material', 'Iroko wood and woven fibre'], ['Dimensions', '50 × 40 × 45 cm']],
         };
@@ -314,11 +314,11 @@ class MarketplaceSeeder extends Seeder
     {
         return match ($category) {
             'fine-art' => "Original, signed by the artist\nCertificate of authenticity\nShipped rolled in a protective tube",
-            'fashion' => "Hand-dyed adire pattern\nBreathable cotton for warm weather\nEvery piece is one of a kind",
-            'leatherwork' => "Hand-stitched in Aba\nFull-grain leather that ages beautifully\nSolid brass hardware",
-            'ceramics' => "Wheel-thrown by hand\nGlazed inside, raw clay outside\nDishwasher safe",
-            'sculpture' => "Carved from a single block\nSigned base\nIndoor display",
-            default => "Handmade by a Nigerian artisan\nSustainably sourced materials\nAssembled before delivery",
+            'fashion' => "Hand dyed adire pattern\nBreathable cotton for warm weather\nEvery piece is one of a kind",
+            'leatherwork' => "Hand stitched in Aba\nFull grain leather that ages well\nSolid brass hardware",
+            'ceramics' => "Thrown on the wheel by hand\nGlazed inside, raw clay outside\nDishwasher safe",
+            'sculpture' => "Carved from a single block\nSigned base\nFor indoor display",
+            default => "Handmade by a Nigerian artisan\nMaterials sourced with care\nAssembled before delivery",
         };
     }
 

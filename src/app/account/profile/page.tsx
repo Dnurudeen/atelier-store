@@ -81,7 +81,7 @@ function Details() {
           <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} required />
           <Input label="Phone number" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} error={errors.phone} />
         </div>
-        <Input label="Email" value={user.email} disabled hint={user.email_verified ? "Verified" : "Not verified yet — check your inbox."} />
+        <Input label="Email" value={user.email} disabled hint={user.email_verified ? "Verified" : "Not verified yet. Check your inbox."} />
         <Button type="submit" loading={saving}>
           Save changes
         </Button>

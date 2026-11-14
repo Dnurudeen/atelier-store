@@ -19,7 +19,7 @@ export default function AdminReviewsPage() {
   return (
     <AdminTable<Row>
       tabs={[
-        { value: "low", label: "1–2 stars" },
+        { value: "low", label: "1 to 2 stars" },
         { value: "visible", label: "Visible" },
         { value: "hidden", label: "Hidden" },
         { value: "all", label: "All" },
@@ -52,7 +52,7 @@ export default function AdminReviewsPage() {
           label: "",
           className: "text-right",
           render: (r) => (
-            <Button size="sm" variant="outline" className={r.is_hidden ? "" : "border-crimson text-crimson"} onClick={() => action.mutate({ path: `/reviews/${r.id}`, body: { is_hidden: !r.is_hidden }, success: r.is_hidden ? "Review restored" : "Review hidden — rating recalculated" })}>
+            <Button size="sm" variant="outline" className={r.is_hidden ? "" : "border-crimson text-crimson"} onClick={() => action.mutate({ path: `/reviews/${r.id}`, body: { is_hidden: !r.is_hidden }, success: r.is_hidden ? "Review restored" : "Review hidden. Rating recalculated" })}>
               {r.is_hidden ? "Restore" : "Hide"}
             </Button>
           ),

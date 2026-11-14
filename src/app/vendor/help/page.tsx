@@ -5,19 +5,19 @@ const faqs = [
   },
   {
     q: "How do orders move?",
-    a: "Mark an order processing, then shipped with a tracking number if you have one, then delivered. Cancel if you cannot fulfill it. Mark returned if the piece comes back.",
+    a: "Mark an order as processing, then shipped (add a tracking number if you have one), then delivered. Cancel if you cannot fulfil it. Mark returned if the piece comes back.",
   },
   {
     q: "When do I get paid?",
-    a: "Your share appears as a pending balance only after delivery. Atelier closes the week from the admin payouts screen and marks that statement paid. Money is not available while an order is only paid or shipped.",
+    a: "Your share only shows as pending after delivery. Atelier closes the week from the admin payouts screen and marks that statement paid. You do not get paid while an order is only paid or shipped.",
   },
   {
     q: "How do sponsored products get charged?",
-    a: "You set a budget in naira. While the sponsorship is active, ₦500 a day is deducted from your pending balance until the budget is used up. It is not a separate card charge.",
+    a: "You set a budget in naira. While the sponsorship is active, ₦500 a day comes off your pending balance until the budget runs out. It is not a separate card charge.",
   },
   {
     q: "What is the seller score?",
-    a: "Buyers see a score built from the last four weeks: shipping within two days, customer rating, cancellations, and returns.",
+    a: "Buyers see a score from the last four weeks: shipping within two days, customer rating, cancellations and returns.",
   },
 ];
 
@@ -26,7 +26,7 @@ export default function VendorHelpPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <h2 className="font-display text-2xl">Help</h2>
-        <p className="text-sm text-muted">Answers for the questions that come up while you run the store.</p>
+        <p className="text-sm text-muted">Quick answers for the questions that come up while you run your store.</p>
       </div>
       <div className="space-y-3">
         {faqs.map((item) => (

@@ -79,7 +79,7 @@ export default function InventoryPage() {
       {isLoading ? (
         <ListSkeleton />
       ) : !data?.data.length ? (
-        <EmptyState icon={Boxes} title={tab === "all" ? "No products yet" : "Nothing running low"} text={tab !== "all" ? "Great — every product has healthy stock." : undefined} />
+        <EmptyState icon={Boxes} title={tab === "all" ? "No products yet" : "Nothing running low"} text={tab !== "all" ? "Great. Every product has healthy stock." : undefined} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px] text-left text-[13px]">

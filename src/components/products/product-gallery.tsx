@@ -37,7 +37,7 @@ export function ProductGallery({ product }: { product: Product }) {
             <div key={img.id ?? index} className="relative aspect-square min-w-0 flex-[0_0_100%]">
               <AppImage
                 src={img.url}
-                alt={index === 0 ? product.name : `${product.name} – photo ${index + 1}`}
+                alt={index === 0 ? product.name : `${product.name}, photo ${index + 1}`}
                 fill
                 priority={index === 0}
                 sizes="(max-width: 768px) 100vw, 380px"

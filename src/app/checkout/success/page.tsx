@@ -77,7 +77,7 @@ function SuccessContent() {
   const message = paid
     ? "We've emailed your receipt. Sellers are preparing your items and you'll get updates as each package ships."
     : pending
-      ? "This usually takes a moment. You can safely leave this page — your order will update automatically."
+      ? "This usually takes a moment. You can safely leave this page. Your order will update automatically."
       : error || "Your card was not charged, or the payment was cancelled. Your cart is still saved, so you can try again.";
 
   return (

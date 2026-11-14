@@ -39,7 +39,7 @@ function SettingsForm({ initial }: { initial: Settings }) {
         inputMode="decimal"
         value={form.commission_rate}
         onChange={(e) => setForm({ ...form, commission_rate: e.target.value.replace(/[^\d.]/g, "") })}
-        hint="Taken from the item total of every new order (0–50%). Existing orders keep their rate."
+        hint="Taken from the item total of every new order (0 to 50%). Existing orders keep their rate."
       />
       <div />
       <Input label="Support email" type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })} />

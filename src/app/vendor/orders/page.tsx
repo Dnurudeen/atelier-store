@@ -87,7 +87,7 @@ function OrdersInner() {
                     <td className="px-4 py-3">
                       <p className="font-semibold">{row.order.order_number}</p>
                       <p className="text-muted">{formatDate(row.order.created_at, true)}</p>
-                      {late && <p className="text-[11px] font-semibold text-crimson">Ship today — over 2 days old</p>}
+                      {late && <p className="text-[11px] font-semibold text-crimson">Ship today. This order is over 2 days old</p>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">

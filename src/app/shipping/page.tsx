@@ -4,17 +4,20 @@ import { InfoPage, InfoSection } from "@/components/layout/info-page";
 export const metadata: Metadata = { title: "Delivery options" };
 
 const rows = [
-  ["Within the seller's state", "1–3 business days"],
-  ["Same region (e.g. South-West)", "2–4 business days"],
-  ["Other southern & central states", "3–6 business days"],
-  ["Northern states", "4–8 business days"],
+  ["Within the seller's state", "1 to 3 business days"],
+  ["Same region (for example South West)", "2 to 4 business days"],
+  ["Other southern and central states", "3 to 6 business days"],
+  ["Northern states", "4 to 8 business days"],
 ];
 
 export default function ShippingPage() {
   return (
     <InfoPage title="Delivery options" intro="We deliver to all 36 states and the FCT." current="/shipping">
       <InfoSection title="Door delivery">
-        <p>Every seller ships their items directly to your address. Your order is split into one package per seller, and each package has its own delivery fee shown at checkout before you pay.</p>
+        <p>
+          Every seller ships their items straight to your address. Your order is split into one package per seller,
+          and each package has its own delivery fee shown at checkout before you pay.
+        </p>
       </InfoSection>
       <InfoSection title="Estimated delivery times">
         <div className="overflow-hidden rounded-md border border-border">
@@ -35,7 +38,9 @@ export default function ShippingPage() {
             </tbody>
           </table>
         </div>
-        <p className="text-[13px] text-muted">Handmade and made-to-order pieces may need extra preparation time; the seller will note this on the product page.</p>
+        <p className="text-[13px] text-muted">
+          Handmade and made to order pieces may need extra preparation time. The seller will note this on the product page.
+        </p>
       </InfoSection>
       <InfoSection title="Tracking">
         <p>When a seller ships your package you&apos;ll get a notification and a tracking number in your order details.</p>

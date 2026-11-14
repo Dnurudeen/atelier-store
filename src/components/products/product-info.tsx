@@ -282,7 +282,7 @@ export function StickyBuyBox({ product }: { product: Product }) {
         {[
           { href: "#details", label: "Product details", icon: FileText },
           { href: "#specifications", label: "Specifications", icon: ListChecks },
-          { href: "#reviews", label: "Verified customer feedback", icon: MessageSquareText },
+          { href: "#reviews", label: "Customer reviews", icon: MessageSquareText },
         ].map(({ href, label, icon: Icon }) => (
           <a key={href} href={href} className="flex items-center gap-2.5 border-b border-border px-3 py-2.5 last:border-0 hover:bg-surface">
             <Icon size={16} className="text-muted" /> {label}

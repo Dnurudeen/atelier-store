@@ -48,7 +48,7 @@ export function addBusinessDays(start: Date, days: number): Date {
 export function formatDeliveryRange(sellerLocation: string | null | undefined, buyerState: string | null | undefined, now = new Date()) {
   const [min, max] = deliveryWindow(sellerLocation, buyerState);
   const fmt = (d: Date) => d.toLocaleDateString("en-NG", { day: "numeric", month: "short" });
-  return `${fmt(addBusinessDays(now, min))} – ${fmt(addBusinessDays(now, max))}`;
+  return `${fmt(addBusinessDays(now, min))} to ${fmt(addBusinessDays(now, max))}`;
 }
 
 export function isValidNigerianPhone(phone: string) {

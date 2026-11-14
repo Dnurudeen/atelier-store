@@ -89,7 +89,7 @@ export function CategoryDrawer({ open, onClose }: { open: boolean; onClose: () =
                         onClick={() => setExpanded(isOpen ? null : category.slug)}
                         className="px-4 py-2.5 text-muted hover:text-burgundy"
                         aria-expanded={isOpen}
-                        aria-label={`Show ${category.name} sub-categories`}
+                        aria-label={`Show ${category.name} categories`}
                       >
                         <ChevronRight size={16} className={cn("transition-transform", isOpen && "rotate-90")} />
                       </button>

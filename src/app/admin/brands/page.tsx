@@ -44,7 +44,7 @@ export default function AdminBrandsPage() {
         page={t.page}
         onPage={t.setPage}
         minWidth={560}
-        empty="No brands yet — sellers create them when they list products."
+        empty="No brands yet. Sellers create them when they list products."
         columns={[
           { key: "name", label: "Brand", render: (b) => <span className="font-semibold">{b.name}<span className="ml-2 font-normal text-muted">/{b.slug}</span></span> },
           { key: "products", label: "Products", render: (b) => b.products_count },

@@ -18,8 +18,8 @@ type Row = ReturnRequest & { refund_amount: string; refund_status?: string | nul
 
 const DECISIONS = {
   refund: "Refund the customer (item received / not needed back)",
-  approve: "Approve — customer sends the item back to the seller",
-  reject: "Close the case — side with the seller",
+  approve: "Approve: customer sends the item back to the seller",
+  reject: "Close the case and side with the seller",
 } as const;
 
 function ReturnsInner() {
@@ -106,7 +106,7 @@ function ReturnsInner() {
               loading={action.isPending}
               onClick={() =>
                 action.mutate(
-                  { path: `/returns/${deciding!.id}`, body: { decision, note: note || undefined }, success: "Decision saved — both parties notified" },
+                  { path: `/returns/${deciding!.id}`, body: { decision, note: note || undefined }, success: "Decision saved. Both parties notified" },
                   { onSuccess: () => { setDeciding(null); setNote(""); } }
                 )
               }

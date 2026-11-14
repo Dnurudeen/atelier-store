@@ -82,10 +82,10 @@ export default function AdminPayoutsPage() {
                           <span className="block text-muted">{p.store.account_name}</span>
                         </>
                       ) : (
-                        <span className="text-crimson">No bank details — ask the seller to add them</span>
+                        <span className="text-crimson">No bank details. Ask the seller to add them</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-muted">{p.statement ? `${formatDate(p.statement.period_start)} – ${formatDate(p.statement.period_end)}` : formatDate(p.created_at)}</td>
+                    <td className="px-4 py-3 text-muted">{p.statement ? `${formatDate(p.statement.period_start)} to ${formatDate(p.statement.period_end)}` : formatDate(p.created_at)}</td>
                     <td className="px-4 py-3">
                       <span className="font-bold">{formatNaira(p.amount)}</span>
                       <span className="block text-muted">commission {formatNaira(p.commission)}</span>
@@ -131,7 +131,7 @@ export default function AdminPayoutsPage() {
               disabled={reference.trim().length < 3}
               onClick={() =>
                 action.mutate(
-                  { path: `/payouts/${paying!.id}`, body: { status: "paid", reference }, success: "Payout recorded — seller notified" },
+                  { path: `/payouts/${paying!.id}`, body: { status: "paid", reference }, success: "Payout recorded. Seller notified" },
                   { onSuccess: () => { setPaying(null); setReference(""); } }
                 )
               }
@@ -154,7 +154,7 @@ export default function AdminPayoutsPage() {
         message="Statements will be created for all sellers with a positive balance. This can't be undone."
         confirmLabel="Close week"
         loading={action.isPending}
-        onConfirm={() => action.mutate({ path: "/statements/close", method: "POST", success: "Week closed — new payouts are listed below" }, { onSuccess: () => setClosing(false) })}
+        onConfirm={() => action.mutate({ path: "/statements/close", method: "POST", success: "Week closed. New payouts are listed below" }, { onSuccess: () => setClosing(false) })}
         onClose={() => setClosing(false)}
       />
     </div>

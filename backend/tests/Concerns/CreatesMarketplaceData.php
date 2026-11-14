@@ -84,7 +84,7 @@ trait CreatesMarketplaceData
             'category_id' => $category->id,
             'name' => $name,
             'slug' => $overrides['slug'] ?? Str::slug($name) . '-' . Str::lower(Str::random(5)),
-            'description' => 'Handcrafted test product',
+            'description' => 'Handmade test product',
             'price' => 50000,
             'stock' => 10,
             'status' => 'published',
@@ -107,7 +107,7 @@ trait CreatesMarketplaceData
     {
         $price = (float) $product->price;
         $order = Order::create([
-            'order_number' => 'ATL-'.strtoupper(Str::random(6)),
+            'order_number' => 'ATL-' . strtoupper(Str::random(6)),
             'user_id' => $buyer->id,
             'status' => 'processing',
             'payment_status' => 'paid',
@@ -143,7 +143,7 @@ trait CreatesMarketplaceData
     {
         return Banner::create(array_merge([
             'title' => 'Empowering Creators',
-            'subtitle' => 'Handcrafted excellence',
+            'subtitle' => 'Handmade work from Nigerian makers',
             'image' => '/media/hero/hero-1.jpg',
             'cta_label' => 'Shop now',
             'cta_url' => '/shop',

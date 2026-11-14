@@ -90,7 +90,7 @@ export const ISSUE_TEXT: Record<Exclude<QuoteIssue, null>, string> = {
   unavailable: "This item is no longer available. Please remove it.",
   choose_option: "Please choose a size/colour for this item.",
   out_of_stock: "Out of stock. Please remove it to continue.",
-  limited_stock: "Only a few left — we reduced the quantity.",
+  limited_stock: "Only a few left. We reduced the quantity.",
 };
 
 /**

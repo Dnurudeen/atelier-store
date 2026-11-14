@@ -117,7 +117,7 @@ export function ProductForm({ product }: { product?: Product }) {
       void client.invalidateQueries({ queryKey: ["vendor-overview"] });
       const s = res.data.status;
       toast.success(
-        s === "draft" ? "Saved as draft." : s === "pending" ? "Submitted for review — we usually approve within 24 hours." : "Changes saved and live."
+        s === "draft" ? "Saved as draft." : s === "pending" ? "Submitted for review. We usually approve within 24 hours." : "Changes saved and live."
       );
       if (!product) router.replace(`/vendor/products/${res.data.id}`);
     } catch (err) {
@@ -150,7 +150,7 @@ export function ProductForm({ product }: { product?: Product }) {
 
       <Panel title="1. Basic information" bodyClassName="grid gap-4 p-4 md:grid-cols-2">
         <div className="md:col-span-2" data-error={Boolean(errors.name)}>
-          <Field label="Product name" required error={errors.name} hint="Brand + product + key detail, e.g. “Ada Couture Ankara Wrap Dress – Red, Cotton”.">
+          <Field label="Product name" required error={errors.name} hint='Brand, product and a key detail, e.g. "Ada Couture Ankara Wrap Dress, Red, Cotton".'>
             <input value={d.name} onChange={(e) => set("name", e.target.value)} maxLength={180} className={selectCls} />
           </Field>
         </div>
@@ -175,7 +175,7 @@ export function ProductForm({ product }: { product?: Product }) {
         </div>
         <Field label="Sub-category" required={children.length > 0} error={children.length ? errors.category_id : undefined}>
           <select value={children.length ? d.category_id : ""} onChange={(e) => set("category_id", e.target.value)} disabled={!children.length} className={selectCls}>
-            <option value="">{children.length ? "Choose a sub-category" : "No sub-categories"}</option>
+            <option value="">{children.length ? "Choose a child category" : "No child categories"}</option>
             {children.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -202,7 +202,7 @@ export function ProductForm({ product }: { product?: Product }) {
 
       <Panel title="2. Photos" bodyClassName="p-4">
         <div data-error={Boolean(errors.images)}>
-          <ImageUploader value={d.images} onChange={(v) => set("images", v)} purpose="product" max={10} hint="Up to 10 photos. Use a plain white or light background for the main photo, at least 800×800 px. Drag to reorder — the first is the main photo." />
+          <ImageUploader value={d.images} onChange={(v) => set("images", v)} purpose="product" max={10} hint="Up to 10 photos. Use a plain white or light background for the main photo, at least 800×800 px. Drag to reorder. The first is the main photo." />
           {errors.images && <p className="mt-1 text-xs text-crimson">{errors.images}</p>}
         </div>
       </Panel>
@@ -340,7 +340,7 @@ export function ProductForm({ product }: { product?: Product }) {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/95 px-3 py-3 backdrop-blur md:left-64">
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {!storeApproved && <p className="mr-auto text-[12px] text-amber-700">Your store is pending approval — you can save drafts now.</p>}
+          {!storeApproved && <p className="mr-auto text-[12px] text-amber-700">Your store is pending approval. You can save drafts now.</p>}
           {d.price && <p className="mr-auto hidden text-sm sm:block">Price: <span className="font-bold">{formatNaira(d.price)}</span></p>}
           <Button variant="outline" onClick={() => router.push("/vendor/products")}>
             Cancel

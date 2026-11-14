@@ -10,25 +10,25 @@ const steps = [
   {
     icon: Store,
     title: "Open your storefront",
-    body: "Share your story, logo, and craft focus. We review every application before you go live.",
+    body: "Tell us your story, add a logo and describe what you make. We review every application before you go live.",
   },
   {
     icon: Package,
     title: "List your pieces",
-    body: "Photograph your work, set fair prices in Naira, and manage inventory from your vendor dashboard.",
+    body: "Upload photos, set prices in naira and keep stock up to date from your seller dashboard.",
   },
   {
     icon: Wallet,
-    title: "Get paid with confidence",
-    body: "Orders route to your studio with clear shipping fees and payout tracking built in.",
+    title: "Get paid",
+    body: "Orders come to your studio with clear delivery fees, and you can track payouts in one place.",
   },
 ];
 
 const benefits = [
-  "Reach buyers who value authentic Nigerian craft",
-  "Cart support for several makers, with shipping per store",
-  "Dedicated support during onboarding",
-  "Marketing on Atelier home and category pages",
+  "Reach buyers who care about real Nigerian craft",
+  "Support for carts with items from more than one maker",
+  "Help from our team while you set up",
+  "Space on Atelier home and category pages",
 ];
 
 export default function BecomeAVendorPage() {
@@ -38,11 +38,11 @@ export default function BecomeAVendorPage() {
         <div className="container-atelier py-16 md:py-24">
           <p className="text-xs font-semibold tracking-[0.22em] text-white/65 uppercase">For artisans</p>
           <h1 className="mt-3 max-w-3xl font-display text-4xl leading-tight md:text-5xl">
-            Turn your studio into a storefront on Atelier Nigeria
+            Sell your work on Atelier Nigeria
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-white/80">
-            Whether you paint, throw pottery, or stitch leather in Aba, we built this marketplace for makers
-            who want a professional home online!
+            Whether you paint, throw pottery or stitch leather in Aba, this is a place for makers who want a
+            proper shop online.
           </p>
           <Link
             href="/register?role=vendor"
@@ -84,8 +84,8 @@ export default function BecomeAVendorPage() {
           <div className="rounded-2xl border border-border bg-surface/50 p-8">
             <h3 className="font-display text-2xl">Ready to apply?</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              Applications take about ten minutes. You&apos;ll need a few product photos and basic business
-              details. Our team typically responds within three business days.
+              The form takes about ten minutes. You&apos;ll need a few product photos and basic business details.
+              Our team usually replies within three business days.
             </p>
             <Link
               href="/register?role=vendor"

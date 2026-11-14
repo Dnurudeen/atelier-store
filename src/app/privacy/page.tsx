@@ -17,7 +17,7 @@ export default function PrivacyPage() {
         </ul>
       </InfoSection>
       <InfoSection title="How we use it">
-        <p>To process and deliver your orders, share the delivery details a seller needs to ship your package, send order updates, prevent fraud, and — only if you opt in — send marketing emails.</p>
+        <p>To process and deliver your orders, share the delivery details a seller needs to ship your package, send order updates, prevent fraud, and (only if you opt in) send marketing emails.</p>
       </InfoSection>
       <InfoSection title="Your rights">
         <p>You can view and update your details in My Account, unsubscribe from marketing at any time, and close your account. Closing your account removes your personal details; order records are kept anonymised for accounting.</p>

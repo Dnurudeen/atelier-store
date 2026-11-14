@@ -105,7 +105,7 @@ export default function AdminCategoriesPage() {
             <div className="space-y-1.5">
               <label className="block text-[13px] font-medium text-foreground/80">Parent</label>
               <select value={draft.parent_id} onChange={(e) => setDraft({ ...draft, parent_id: e.target.value })} className="h-11 w-full rounded-md border border-border bg-white px-3 text-sm">
-                <option value="">None — top-level category</option>
+                <option value="">None (main category)</option>
                 {tops.filter((t) => t.id !== draft.id).map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -140,7 +140,7 @@ export default function AdminCategoriesPage() {
       <ConfirmDialog
         open={Boolean(deleting)}
         title="Delete category?"
-        message={deleting && (deleting.products_count > 0 || deleting.children_count > 0) ? "This category still has products or sub-categories. Hide it instead, or move them first." : `“${deleting?.name}” will be deleted.`}
+        message={deleting && (deleting.products_count > 0 || deleting.children_count > 0) ? "This category still has products or child categories. Hide it instead, or move them first." : `“${deleting?.name}” will be deleted.`}
         confirmLabel="Delete"
         loading={action.isPending}
         onConfirm={() => action.mutate({ path: `/categories/${deleting!.id}`, method: "DELETE" }, { onSuccess: () => setDeleting(null) })}

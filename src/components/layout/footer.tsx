@@ -67,7 +67,7 @@ function Newsletter() {
         </div>
         <form onSubmit={submit} className="w-full max-w-xl">
           <p className="text-[12px] font-bold tracking-wide uppercase">New to Atelier?</p>
-          <p className="text-[12px] text-white/70">Subscribe to our newsletter to get updates on our latest offers!</p>
+          <p className="text-[12px] text-white/70">Get new arrivals and offers in your inbox.</p>
           <div className="mt-2 flex gap-2">
             <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md bg-white px-3 text-foreground">
               <Mail size={16} className="text-muted" />
@@ -76,7 +76,7 @@ function Newsletter() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter E-mail Address"
+                placeholder="Enter your email"
                 aria-label="Email address"
                 className="w-full bg-transparent text-sm outline-none"
               />

@@ -36,7 +36,7 @@ class MailBrand
 
     /**
      * Public “Questions?” address shown in email footers.
-     * Always reads MAIL_SUPPORT_ADDRESS via config — never falls back to MAIL_FROM_ADDRESS
+     * Always reads MAIL_SUPPORT_ADDRESS via config. Never falls back to MAIL_FROM_ADDRESS
      * (SMTP from can be a different mailbox, e.g. a relay account).
      */
     public static function supportEmail(): string
@@ -48,6 +48,6 @@ class MailBrand
 
     public static function tagline(): string
     {
-        return 'Handcrafted excellence from Nigerian makers';
+        return 'Handmade work from makers across Nigeria';
     }
 }

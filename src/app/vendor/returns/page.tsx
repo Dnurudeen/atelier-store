@@ -33,7 +33,7 @@ export default function VendorReturnsPage() {
     setBusy(true);
     try {
       await api(`/vendor/returns/${acting.row.id}`, { method: "PUT", body: { action: acting.action, note: note || undefined } });
-      toast.success({ approve: "Return approved — the customer will send the item back.", reject: "Return declined.", receive: "Marked as received. The refund is now due." }[acting.action]);
+      toast.success({ approve: "Return approved. The customer will send the item back.", reject: "Return declined.", receive: "Marked as received. The refund is now due." }[acting.action]);
       setActing(null);
       setNote("");
       void client.invalidateQueries({ queryKey: ["vendor-returns"] });

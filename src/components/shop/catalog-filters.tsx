@@ -128,12 +128,12 @@ function FilterPanel({ categories, current, parent, facets }: Props) {
         <form onSubmit={applyPrice} className="space-y-2.5">
           {facets?.price && facets.price.max > 0 && (
             <p className="text-[11px] text-muted">
-              {formatNaira(facets.price.min)} – {formatNaira(facets.price.max)}
+              {formatNaira(facets.price.min)} to {formatNaira(facets.price.max)}
             </p>
           )}
           <div className="flex items-center gap-2">
             <input inputMode="numeric" value={min} onChange={(e) => setMin(e.target.value.replace(/\D/g, ""))} placeholder="Min" aria-label="Minimum price" className="h-9 w-full min-w-0 rounded-md border border-border px-2.5 text-[13px] outline-none focus:border-burgundy" />
-            <span className="text-muted">–</span>
+            <span className="text-muted">to</span>
             <input inputMode="numeric" value={max} onChange={(e) => setMax(e.target.value.replace(/\D/g, ""))} placeholder="Max" aria-label="Maximum price" className="h-9 w-full min-w-0 rounded-md border border-border px-2.5 text-[13px] outline-none focus:border-burgundy" />
             <button type="submit" className="shrink-0 px-1 text-[13px] font-bold text-crimson uppercase hover:text-crimson-hover">
               Apply
@@ -305,7 +305,7 @@ export function ActiveFilterChips({ facets }: { facets: Facets | null }) {
   listValues(params.get("brand")).forEach((b) => chips.push({ label: brandName(b), change: { brand: toggleListValue(params.get("brand"), b) } }));
   if (params.get("min") || params.get("max"))
     chips.push({
-      label: `${params.get("min") ? formatNaira(params.get("min")!) : "₦0"} – ${params.get("max") ? formatNaira(params.get("max")!) : "any"}`,
+      label: `${params.get("min") ? formatNaira(params.get("min")!) : "₦0"} to ${params.get("max") ? formatNaira(params.get("max")!) : "any"}`,
       change: { min: null, max: null },
     });
   if (params.get("discount")) chips.push({ label: `${params.get("discount")}%+ off`, change: { discount: null } });

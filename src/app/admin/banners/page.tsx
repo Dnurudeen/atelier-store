@@ -68,7 +68,7 @@ export default function AdminBannersPage() {
             {isLoading ? (
               <ListSkeleton rows={1} />
             ) : rows.length === 0 ? (
-              <p className="text-sm text-muted">{placement === "tile" ? "None — the store shows the default shortcut tiles." : "None yet."}</p>
+              <p className="text-sm text-muted">{placement === "tile" ? "None yet. The store shows the default shortcut tiles." : "None yet."}</p>
             ) : (
               rows.map((b) => (
                 <div key={b.id} className={`overflow-hidden rounded-md border border-border ${b.is_active ? "" : "opacity-60"}`}>

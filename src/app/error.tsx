@@ -15,7 +15,7 @@ export default function Error({ error, retry }: { error: unknown; retry: () => v
         <div className="rounded-md bg-white p-8 text-center">
           <h1 className="font-display text-2xl text-burgundy">Something went wrong</h1>
           <p className="mt-2 text-sm text-muted">
-            We hit a snag loading this page. Please try again — if it keeps happening, contact our support team.
+            We hit a snag loading this page. Please try again. If it keeps happening, contact our support team.
           </p>
           <div className="mt-6 flex justify-center gap-2">
             <button

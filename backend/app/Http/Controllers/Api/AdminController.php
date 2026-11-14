@@ -48,12 +48,12 @@ class AdminController extends Controller
 
     public function overview()
     {
-        $paid = fn () => Order::where('payment_status', 'paid');
+        $paid = fn() => Order::where('payment_status', 'paid');
         $since = now()->subDays(29)->startOfDay();
 
         $daily = $paid()->where('created_at', '>=', $since)->get(['total', 'created_at'])
-            ->groupBy(fn ($o) => $o->created_at->toDateString())
-            ->map(fn ($rows) => ['gmv' => round((float) $rows->sum('total'), 2), 'orders' => $rows->count()]);
+            ->groupBy(fn($o) => $o->created_at->toDateString())
+            ->map(fn($rows) => ['gmv' => round((float) $rows->sum('total'), 2), 'orders' => $rows->count()]);
         $series = collect(range(0, 29))->map(function ($i) use ($since, $daily) {
             $day = $since->copy()->addDays($i)->toDateString();
 
@@ -64,7 +64,7 @@ class AdminController extends Controller
             'data' => [
                 'gmv' => (float) $paid()->sum('total'),
                 'gmv_30d' => (float) $paid()->where('created_at', '>=', $since)->sum('total'),
-                'commission' => (float) SubOrder::whereHas('order', fn ($q) => $q->where('payment_status', 'paid'))
+                'commission' => (float) SubOrder::whereHas('order', fn($q) => $q->where('payment_status', 'paid'))
                     ->whereNotIn('status', ['cancelled', 'returned'])->sum('commission'),
                 'orders' => Order::count(),
                 'paid_orders' => $paid()->count(),
@@ -90,7 +90,7 @@ class AdminController extends Controller
     {
         $query = User::query()
             ->withCount('orders')
-            ->withSum(['orders as total_spent' => fn ($q) => $q->where('payment_status', 'paid')], 'total')
+            ->withSum(['orders as total_spent' => fn($q) => $q->where('payment_status', 'paid')], 'total')
             ->latest();
 
         if ($request->filled('role')) {
@@ -101,7 +101,7 @@ class AdminController extends Controller
         }
         if ($request->filled('q')) {
             $q = $this->like($request->string('q'));
-            $query->where(fn ($b) => $b->where('name', 'like', $q)->orWhere('email', 'like', $q)->orWhere('phone', 'like', $q));
+            $query->where(fn($b) => $b->where('name', 'like', $q)->orWhere('email', 'like', $q)->orWhere('phone', 'like', $q));
         }
 
         return $this->paginated($query->paginate($this->perPage($request)));
@@ -159,7 +159,7 @@ class AdminController extends Controller
     public function vendors(Request $request)
     {
         $query = Store::with('user:id,name,email,phone')
-            ->withCount(['products', 'products as live_products_count' => fn ($q) => $q->where('status', 'published')])
+            ->withCount(['products', 'products as live_products_count' => fn($q) => $q->where('status', 'published')])
             ->latest();
 
         if ($request->filled('status')) {
@@ -167,7 +167,7 @@ class AdminController extends Controller
         }
         if ($request->filled('q')) {
             $q = $this->like($request->string('q'));
-            $query->where(fn ($b) => $b->where('name', 'like', $q)->orWhereHas('user', fn ($u) => $u->where('email', 'like', $q)));
+            $query->where(fn($b) => $b->where('name', 'like', $q)->orWhereHas('user', fn($u) => $u->where('email', 'like', $q)));
         }
 
         $page = $query->paginate($this->perPage($request));
@@ -181,11 +181,11 @@ class AdminController extends Controller
     public function vendor(int $id, SellerScoreService $scores, StatementService $statements)
     {
         $store = Store::with('user:id,name,email,phone,created_at')
-            ->withCount(['products', 'products as live_products_count' => fn ($q) => $q->where('status', 'published'), 'followers'])
+            ->withCount(['products', 'products as live_products_count' => fn($q) => $q->where('status', 'published'), 'followers'])
             ->findOrFail($id)
             ->withPrivateDetails();
 
-        $paidSubs = SubOrder::where('store_id', $store->id)->whereHas('order', fn ($q) => $q->where('payment_status', 'paid'));
+        $paidSubs = SubOrder::where('store_id', $store->id)->whereHas('order', fn($q) => $q->where('payment_status', 'paid'));
 
         return response()->json([
             'data' => [
@@ -233,7 +233,7 @@ class AdminController extends Controller
             }
         }
 
-        $this->audit($request, 'vendor.'.$data['status'], $store, ['from' => $before, 'reason' => $data['reason'] ?? null]);
+        $this->audit($request, 'vendor.' . $data['status'], $store, ['from' => $before, 'reason' => $data['reason'] ?? null]);
 
         return response()->json(['data' => $store]);
     }
@@ -255,7 +255,7 @@ class AdminController extends Controller
         }
         if ($request->filled('q')) {
             $q = $this->like($request->string('q'));
-            $query->where(fn ($b) => $b->where('name', 'like', $q)->orWhere('sku', 'like', $q));
+            $query->where(fn($b) => $b->where('name', 'like', $q)->orWhere('sku', 'like', $q));
         }
 
         return $this->paginated($query->paginate($this->perPage($request)), [
@@ -301,7 +301,7 @@ class AdminController extends Controller
                 'product',
                 $data['status'] === 'published' ? 'Product approved' : 'Product needs changes',
                 $data['status'] === 'published' ? "“{$product->name}” is now live." : "“{$product->name}”: {$data['reason']}",
-                '/vendor/products/'.$product->id
+                '/vendor/products/' . $product->id
             );
         }
 
@@ -333,13 +333,13 @@ class AdminController extends Controller
             $query->where('payment_status', $request->string('payment'));
         }
         if ($request->boolean('refunds')) {
-            $query->whereHas('subOrders', fn ($s) => $s->where('refund_status', 'pending'));
+            $query->whereHas('subOrders', fn($s) => $s->where('refund_status', 'pending'));
         }
         if ($request->filled('q')) {
             $q = $this->like($request->string('q'));
-            $query->where(fn ($b) => $b->where('order_number', 'like', $q)
+            $query->where(fn($b) => $b->where('order_number', 'like', $q)
                 ->orWhere('paystack_reference', 'like', $q)
-                ->orWhereHas('user', fn ($u) => $u->where('email', 'like', $q)->orWhere('name', 'like', $q)));
+                ->orWhereHas('user', fn($u) => $u->where('email', 'like', $q)->orWhere('name', 'like', $q)));
         }
 
         return $this->paginated($query->paginate($this->perPage($request)));
@@ -382,7 +382,7 @@ class AdminController extends Controller
             }
             $sub->update(['refund_status' => 'refunded']);
             $sub->loadMissing('order');
-            InboxNotification::notify($sub->order?->user_id, 'order', 'Refund sent', 'We refunded ₦'.number_format((float) $sub->total).' for order '.$sub->order?->order_number.'. It can take 5–10 business days to show.', '/account/orders/'.$sub->order_id);
+            InboxNotification::notify($sub->order?->user_id, 'order', 'Refund sent', 'We refunded ₦' . number_format((float) $sub->total) . ' for order ' . $sub->order?->order_number . '. It can take 5 to 10 business days to show.', '/account/orders/' . $sub->order_id);
         }
 
         $this->audit($request, 'order.updated', $sub, collect($data)->except('tracking_number')->all());
@@ -418,12 +418,12 @@ class AdminController extends Controller
                 throw ValidationException::withMessages(['decision' => ['No refund is due on this return.']]);
             }
             $return->update(['refund_status' => 'refunded']);
-            InboxNotification::notify($return->user_id, 'return', 'Refund sent', 'Your refund of ₦'.number_format((float) $return->refund_amount).' has been sent.', '/account/returns');
+            InboxNotification::notify($return->user_id, 'return', 'Refund sent', 'Your refund of ₦' . number_format((float) $return->refund_amount) . ' has been sent.', '/account/returns');
         } else {
             $return = $returns->adminResolve($return, $data['decision'], $data['note'] ?? null);
         }
 
-        $this->audit($request, 'return.'.$data['decision'], $return, ['note' => $data['note'] ?? null]);
+        $this->audit($request, 'return.' . $data['decision'], $return, ['note' => $data['note'] ?? null]);
 
         return response()->json(['data' => $return->fresh(['item'])]);
     }
@@ -462,10 +462,10 @@ class AdminController extends Controller
                 throw ValidationException::withMessages(['parent_id' => ['A category cannot be its own parent.']]);
             }
             if ($category->children()->exists()) {
-                throw ValidationException::withMessages(['parent_id' => ['Move this category\'s sub-categories first — we support two levels.']]);
+                throw ValidationException::withMessages(['parent_id' => ['Move this category\'s child categories first. We support two levels.']]);
             }
             if (Category::find($data['parent_id'])?->parent_id) {
-                throw ValidationException::withMessages(['parent_id' => ['Choose a top-level category as the parent.']]);
+                throw ValidationException::withMessages(['parent_id' => ['Choose a main category as the parent.']]);
             }
         }
 
@@ -657,7 +657,7 @@ class AdminController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
         }
-        $rows = $query->limit(300)->get()->each(fn ($p) => $p->store?->withPrivateDetails());
+        $rows = $query->limit(300)->get()->each(fn($p) => $p->store?->withPrivateDetails());
 
         return response()->json(['data' => $rows]);
     }
@@ -676,9 +676,9 @@ class AdminController extends Controller
 
         if ($payout->statement_id && $data['status'] === 'paid') {
             Statement::where('id', $payout->statement_id)->update(['status' => 'paid']);
-            InboxNotification::notify($payout->store?->user_id, 'payout', 'Payout sent', '₦'.number_format((float) $payout->amount).' was sent to your bank account (ref '.$data['reference'].').', '/vendor/statements');
+            InboxNotification::notify($payout->store?->user_id, 'payout', 'Payout sent', '₦' . number_format((float) $payout->amount) . ' was sent to your bank account (ref ' . $data['reference'] . ').', '/vendor/statements');
         }
-        $this->audit($request, 'payout.'.$data['status'], $payout, ['reference' => $data['reference'] ?? null]);
+        $this->audit($request, 'payout.' . $data['status'], $payout, ['reference' => $data['reference'] ?? null]);
 
         return response()->json(['data' => $payout]);
     }
@@ -711,7 +711,7 @@ class AdminController extends Controller
         $data = $request->validate(['status' => ['required', 'in:open,closed']]);
         $updated = DB::table('contact_messages')->where('id', $id)->update(['status' => $data['status'], 'updated_at' => now()]);
         abort_unless($updated, 404);
-        $this->audit($request, 'message.'.$data['status'], null, ['message_id' => $id]);
+        $this->audit($request, 'message.' . $data['status'], null, ['message_id' => $id]);
 
         return response()->json(['data' => DB::table('contact_messages')->find($id)]);
     }
@@ -748,7 +748,7 @@ class AdminController extends Controller
             return response()->json(['data' => $this->settingsPayload()]);
         }
 
-        $rules = collect(self::SETTINGS)->map(fn ($r) => ['sometimes', ...$r])->all();
+        $rules = collect(self::SETTINGS)->map(fn($r) => ['sometimes', ...$r])->all();
         $data = $request->validate($rules);
         foreach ($data as $key => $value) {
             Setting::updateOrCreate(['key' => $key], ['value' => $value === null ? null : (string) $value]);
@@ -844,7 +844,7 @@ class AdminController extends Controller
         $slug = $base;
         $n = 2;
         while ($model::where('slug', $slug)->exists()) {
-            $slug = $base.'-'.$n++;
+            $slug = $base . '-' . $n++;
         }
 
         return $slug;
@@ -852,7 +852,7 @@ class AdminController extends Controller
 
     private function like(mixed $term): string
     {
-        return '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], (string) $term).'%';
+        return '%' . str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], (string) $term) . '%';
     }
 
     private function perPage(Request $request, int $default = 25): int
@@ -876,6 +876,6 @@ class AdminController extends Controller
 
     private function audit(Request $request, string $action, $subject = null, array $meta = []): void
     {
-        AdminAction::record($request->user(), $action, $subject, array_filter($meta, fn ($v) => $v !== null));
+        AdminAction::record($request->user(), $action, $subject, array_filter($meta, fn($v) => $v !== null));
     }
 }

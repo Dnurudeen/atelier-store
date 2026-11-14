@@ -34,7 +34,7 @@ function Timeline({ sub }: { sub: DetailSub }) {
   if (sub.status === "cancelled" || sub.status === "expired") {
     return (
       <p className="flex items-center gap-2 text-[13px] text-muted">
-        <X size={15} className="text-crimson" /> {sub.status === "cancelled" ? `Cancelled ${formatDate(sub.cancelled_at)}${sub.cancel_reason ? ` — ${sub.cancel_reason}` : ""}` : "Payment not completed"}
+        <X size={15} className="text-crimson" /> {sub.status === "cancelled" ? `Cancelled ${formatDate(sub.cancelled_at)}${sub.cancel_reason ? `: ${sub.cancel_reason}` : ""}` : "Payment not completed"}
         {sub.refund_status === "pending" && <span className="font-semibold text-foreground">· Refund in progress</span>}
       </p>
     );

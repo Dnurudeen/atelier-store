@@ -17,7 +17,7 @@ import { formatNaira } from "@/lib/utils";
 
 const NEXT_STEP: Record<string, string> = {
   requested: "Waiting for the seller to respond (usually within 2 business days).",
-  approved: "Approved — send the item back to the seller. Your refund starts once it arrives.",
+  approved: "Approved. Send the item back to the seller. Your refund starts once it arrives.",
   rejected: "The seller declined this return. If you disagree you can escalate it to Atelier.",
   escalated: "Atelier is reviewing your case. We'll update you here.",
   received: "Item received. Your refund is being processed to your original payment method.",

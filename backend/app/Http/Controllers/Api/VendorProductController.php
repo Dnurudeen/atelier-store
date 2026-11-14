@@ -44,8 +44,8 @@ class VendorProductController extends Controller
         }
 
         if ($request->filled('q')) {
-            $q = '%'.str_replace(['%', '_'], ['\%', '\_'], $request->string('q')).'%';
-            $query->where(fn ($b) => $b->where('name', 'like', $q)->orWhere('sku', 'like', $q));
+            $q = '%' . str_replace(['%', '_'], ['\%', '\_'], $request->string('q')) . '%';
+            $query->where(fn($b) => $b->where('name', 'like', $q)->orWhere('sku', 'like', $q));
         }
 
         $sort = $request->string('sort')->toString();
@@ -139,8 +139,10 @@ class VendorProductController extends Controller
             $imagesChanged = $newUrls !== null && $newUrls !== $product->images()->pluck('url')->all();
 
             // Specs saved in the legacy object format compare equal to the same rows as a list.
-            if ($product->isDirty('specs')
-                && Product::normalizeSpecs($product->getOriginal('specs')) === Product::normalizeSpecs($product->specs)) {
+            if (
+                $product->isDirty('specs')
+                && Product::normalizeSpecs($product->getOriginal('specs')) === Product::normalizeSpecs($product->specs)
+            ) {
                 $product->specs = $product->getOriginal('specs');
             }
 
@@ -175,7 +177,7 @@ class VendorProductController extends Controller
 
         $copy = DB::transaction(function () use ($source) {
             $copy = $source->replicate(['rating', 'reviews_count', 'sold_count', 'rejection_reason', 'is_featured']);
-            $copy->name = Str::limit($source->name.' (copy)', 180, '');
+            $copy->name = Str::limit($source->name . ' (copy)', 180, '');
             $copy->slug = $this->uniqueSlug($copy->name);
             $copy->sku = null;
             $copy->status = 'draft';
@@ -298,13 +300,13 @@ class VendorProductController extends Controller
             $category = Category::withCount('children')->find($data['category_id']);
             if ($category && $category->children_count > 0) {
                 throw ValidationException::withMessages([
-                    'category_id' => ['Choose the most specific sub-category for this product.'],
+                    'category_id' => ['Choose the most specific category for this product.'],
                 ]);
             }
         }
 
         if (isset($data['variants'])) {
-            $names = collect($data['variants'])->map(fn ($v) => Str::lower($this->variantName($v)))->filter();
+            $names = collect($data['variants'])->map(fn($v) => Str::lower($this->variantName($v)))->filter();
             if ($names->count() !== $names->unique()->count()) {
                 throw ValidationException::withMessages(['variants' => ['Each option must be different.']]);
             }
@@ -324,9 +326,26 @@ class VendorProductController extends Controller
     private function fill(Product $product, array $data): void
     {
         $fields = [
-            'name', 'description', 'key_features', 'whats_in_box', 'warranty', 'condition', 'sku', 'category_id',
-            'price', 'compare_at_price', 'sale_ends_at', 'stock', 'low_stock_threshold', 'weight_kg', 'length_cm',
-            'width_cm', 'height_cm', 'meta_title', 'meta_description', 'specs',
+            'name',
+            'description',
+            'key_features',
+            'whats_in_box',
+            'warranty',
+            'condition',
+            'sku',
+            'category_id',
+            'price',
+            'compare_at_price',
+            'sale_ends_at',
+            'stock',
+            'low_stock_threshold',
+            'weight_kg',
+            'length_cm',
+            'width_cm',
+            'height_cm',
+            'meta_title',
+            'meta_description',
+            'specs',
         ];
         foreach ($fields as $field) {
             if (array_key_exists($field, $data)) {
@@ -386,7 +405,7 @@ class VendorProductController extends Controller
                 'sku' => $row['sku'] ?? null,
                 'price' => $row['price'] ?? null,
                 'stock' => (int) ($row['stock'] ?? 0),
-                'attributes' => array_filter($row['attributes'] ?? [], fn ($v) => $v !== null && $v !== ''),
+                'attributes' => array_filter($row['attributes'] ?? [], fn($v) => $v !== null && $v !== ''),
             ];
 
             $variant = ! empty($row['id'])
@@ -431,7 +450,7 @@ class VendorProductController extends Controller
         $each = intdiv($stock, count($combos));
         $remainder = $stock % count($combos);
 
-        return array_map(fn ($attrs, $i) => [
+        return array_map(fn($attrs, $i) => [
             'attributes' => $attrs,
             'stock' => $each + ($i < $remainder ? 1 : 0),
         ], $combos, array_keys($combos));
@@ -449,7 +468,7 @@ class VendorProductController extends Controller
 
     private function uniqueSlug(string $name): string
     {
-        return (Str::slug($name) ?: 'product').'-'.Str::lower(Str::random(6));
+        return (Str::slug($name) ?: 'product') . '-' . Str::lower(Str::random(6));
     }
 
     private function find(Request $request, int $id): Product

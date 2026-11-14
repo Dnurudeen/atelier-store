@@ -140,7 +140,7 @@ class AccountController extends Controller
 
         return response()->json([
             'message' => $sub->refund_status === 'pending'
-                ? 'Cancelled. Your refund will reach your original payment method within 5–10 business days.'
+                ? 'Cancelled. Your refund will reach your original payment method within 5 to 10 business days.'
                 : 'Cancelled.',
             'data' => $sub->fresh(['items', 'store:id,name,slug']),
         ]);

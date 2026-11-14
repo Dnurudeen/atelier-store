@@ -60,7 +60,7 @@ export default function SponsoredPage() {
     <div className="space-y-3">
       <Panel title="Sponsor a product" bodyClassName="p-4">
         <p className="mb-3 text-[13px] text-muted">
-          Sponsored products appear in the home page “Sponsored” rail and at the top of their category, marked “Sponsored”. The daily fee is deducted from your pending balance — no card needed. Charges pause when your balance can&apos;t cover them.
+          Sponsored products appear in the home page “Sponsored” rail and at the top of their category, marked “Sponsored”. The daily fee is deducted from your pending balance. No card needed. Charges pause when your balance can&apos;t cover them.
         </p>
         <form onSubmit={create} className="grid gap-3 md:grid-cols-[1fr_150px_150px_auto] md:items-end">
           <label className="block space-y-1.5">

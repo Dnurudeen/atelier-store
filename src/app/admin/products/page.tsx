@@ -215,7 +215,7 @@ function ProductsInner() {
               disabled={reason.trim().length < 3}
               onClick={() =>
                 action.mutate(
-                  { path: `/products/${rejecting!.id}`, body: { status: "rejected", reason }, success: "Product rejected — seller notified" },
+                  { path: `/products/${rejecting!.id}`, body: { status: "rejected", reason }, success: "Product rejected. Seller notified" },
                   { onSuccess: () => { setRejecting(null); setReason(""); } }
                 )
               }
