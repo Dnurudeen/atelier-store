@@ -79,13 +79,13 @@ export function SearchBox({ className, autoFocus, onDone }: { className?: string
               setRecent(readRecent());
               setOpen(true);
             }}
-            placeholder="Search products, brands and categories"
+            placeholder="Search products, brands…"
             aria-label="Search products, brands and categories"
             aria-expanded={open}
             aria-controls={listId}
             role="combobox"
             aria-autocomplete="list"
-            className="h-full w-full bg-transparent px-2 text-sm outline-none placeholder:text-muted"
+            className="h-full w-full min-w-0 bg-transparent px-2 text-sm outline-none placeholder:text-muted"
           />
           {query && (
             <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="text-muted hover:text-foreground">
@@ -95,9 +95,10 @@ export function SearchBox({ className, autoFocus, onDone }: { className?: string
         </label>
         <button
           type="submit"
-          className="h-10 shrink-0 rounded-md bg-crimson px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-crimson-hover md:px-5"
+          className="h-10 shrink-0 rounded-md bg-burgundy px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-burgundy-deep md:px-5"
         >
-          Search
+          <span className="md:hidden">Go</span>
+          <span className="hidden md:inline">Search</span>
         </button>
       </form>
 

@@ -12,10 +12,11 @@ type Tone = "light" | "dark" | "crimson" | "burgundy";
 
 const TONES: Record<Tone, { wrap: string; title: string; link: string; sub: string }> = {
   light: { wrap: "bg-transparent", title: "text-foreground", link: "text-burgundy hover:underline", sub: "text-muted" },
-  dark: { wrap: "bg-[#3b3b3b]", title: "text-white", link: "bg-white text-foreground hover:bg-surface", sub: "text-white/75" },
-  crimson: { wrap: "bg-crimson", title: "text-white", link: "bg-white text-crimson hover:bg-surface", sub: "text-white/85" },
+  dark: { wrap: "bg-[#2f2f2f]", title: "text-white", link: "bg-white text-foreground hover:bg-surface", sub: "text-white/75" },
+  /* Soft wine band instead of loud solid crimson */
+  crimson: { wrap: "bg-[#5c1820]", title: "text-white", link: "bg-white text-[#5c1820] hover:bg-surface", sub: "text-white/80" },
   burgundy: { wrap: "bg-burgundy", title: "text-white", link: "bg-white text-burgundy hover:bg-surface", sub: "text-white/80" },
-};
+}
 
 /**
  * Jumia rail: a rounded coloured container with a bold title, optional countdown,

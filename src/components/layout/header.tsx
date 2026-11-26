@@ -147,10 +147,10 @@ export function Header() {
 
         {/* Main bar */}
         <div className="border-b border-border bg-white">
-          <div className="container-atelier flex h-14 items-center gap-2 md:h-[68px] md:gap-5">
-            <div className="flex shrink-0 items-center gap-1">
+          <div className="container-atelier flex h-14 min-w-0 items-center gap-1.5 overflow-hidden md:h-[68px] md:gap-4">
+            <div className="flex min-w-0 shrink items-center gap-0.5">
               <button
-                className="-ml-2 rounded-md p-2 hover:bg-surface"
+                className="-ml-1 shrink-0 rounded-md p-2 hover:bg-surface"
                 onClick={() => setDrawerOpen(true)}
                 aria-label="Open categories menu"
               >
@@ -159,11 +159,11 @@ export function Header() {
               <BrandLogo variant="header" priority />
             </div>
 
-            <Suspense fallback={<div className="hidden h-10 flex-1 md:block" />}>
+            <Suspense fallback={<div className="hidden h-10 min-w-0 flex-1 md:block" />}>
               <SearchBox className="hidden min-w-0 flex-1 md:block" />
             </Suspense>
 
-            <div className="ml-auto flex items-center gap-0.5 md:gap-1">
+            <div className="ml-auto flex shrink-0 items-center gap-0">
               <Dropdown label={user ? `Hi, ${firstName}` : "Account"} icon={User}>
                 {(close) =>
                   user ? (
@@ -222,7 +222,7 @@ export function Header() {
                 }
               </Dropdown>
 
-              <div className="hidden sm:block">
+              <div className="hidden lg:block">
                 <Dropdown label="Help" icon={CircleHelp}>
                   {(close) => (
                     <>

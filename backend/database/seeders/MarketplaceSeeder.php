@@ -162,12 +162,14 @@ class MarketplaceSeeder extends Seeder
         $suffixes = ['Edition', 'Series', 'Studio Cut', 'Signature', 'Collection'];
         for ($i = 0; $i < 48; $i++) {
             $base = $products[$i % count($products)];
+            $pool = $this->imagePool($base[2]);
             $expanded[] = [
                 $base[0] . ' ' . $suffixes[$i % count($suffixes)] . ' ' . ($i + 1),
                 (int) ($base[1] * (0.85 + (($i % 5) * 0.07))),
                 $base[2],
                 $i % count($stores),
-                (($base[4] + $i) % 36) + 1,
+                // Stay inside the category's image band — never walk across Fine Art / Fashion / Ceramics pools.
+                $pool[$i % count($pool)],
             ];
         }
 
@@ -184,7 +186,7 @@ class MarketplaceSeeder extends Seeder
                     'category_id' => $leaves[$catSlug][$i % 2]->id,
                     'brand_id' => Brand::resolve($store->name)->id,
                     'name' => $name,
-                    'sku' => strtoupper(Str::substr(Str::slug($store->name, ''), 0, 4)).'-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                    'sku' => strtoupper(Str::substr(Str::slug($store->name, ''), 0, 4)) . '-' . str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
                     'condition' => 'new',
                     'description' => "Made by {$store->name}, a verified Atelier Nigeria maker in {$store->location}.\n\nEach piece is handmade, so small differences in colour and texture are normal. It ships well packed with a certificate of authenticity.",
                     'key_features' => $this->featuresFor($catSlug),
@@ -206,19 +208,22 @@ class MarketplaceSeeder extends Seeder
             );
             $seeded[] = [$product, $catSlug, $hasReviews];
 
-            ProductImage::updateOrCreate(
-                ['product_id' => $product->id, 'is_primary' => true],
-                ['url' => '/media/products/product-' . $imageN . '.jpg', 'sort_order' => 0]
-            );
+            // Replace all images so reseed never leaves stale cross-category gallery rows.
+            ProductImage::where('product_id', $product->id)->delete();
+            ProductImage::create([
+                'product_id' => $product->id,
+                'url' => '/media/products/product-' . $imageN . '.jpg',
+                'is_primary' => true,
+                'sort_order' => 0,
+            ]);
 
             if ($imageN <= 12) {
-                ProductImage::updateOrCreate(
-                    ['product_id' => $product->id, 'sort_order' => 1],
-                    [
-                        'url' => '/media/products/gallery-' . $imageN . '.jpg',
-                        'is_primary' => false,
-                    ]
-                );
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'url' => '/media/products/gallery-' . $imageN . '.jpg',
+                    'is_primary' => false,
+                    'sort_order' => 1,
+                ]);
             }
 
             $this->syncDemoVariants($product, $catSlug);
@@ -274,13 +279,22 @@ class MarketplaceSeeder extends Seeder
 
         Coupon::updateOrCreate(['code' => 'WELCOME10'], [
             'description' => '10% off your first order (up to ₦5,000)',
-            'type' => 'percent', 'value' => 10, 'max_discount' => 5000, 'per_user_limit' => 1,
-            'first_order_only' => true, 'is_public' => true, 'is_active' => true,
+            'type' => 'percent',
+            'value' => 10,
+            'max_discount' => 5000,
+            'per_user_limit' => 1,
+            'first_order_only' => true,
+            'is_public' => true,
+            'is_active' => true,
         ]);
         Coupon::updateOrCreate(['code' => 'FREESHIP'], [
             'description' => 'Free delivery on orders over ₦50,000',
-            'type' => 'free_shipping', 'value' => 0, 'min_order' => 50000, 'per_user_limit' => 3,
-            'is_public' => true, 'is_active' => true,
+            'type' => 'free_shipping',
+            'value' => 0,
+            'min_order' => 50000,
+            'per_user_limit' => 3,
+            'is_public' => true,
+            'is_active' => true,
         ]);
 
         Banner::updateOrCreate(
@@ -296,6 +310,25 @@ class MarketplaceSeeder extends Seeder
         );
     }
 
+    /**
+     * Category-scoped product image indices matching public/media/products.
+     * Bases 1–12 pair with the canonical 12 products; 13–36 are per-category bands of 4.
+     *
+     * @return list<int>
+     */
+    private function imagePool(string $catSlug): array
+    {
+        return match ($catSlug) {
+            'fine-art' => [1, 2, 13, 14, 15, 16],
+            'fashion' => [3, 4, 17, 18, 19, 20],
+            'ceramics' => [5, 6, 21, 22, 23, 24],
+            'sculpture' => [7, 8, 25, 26, 27, 28],
+            'leatherwork' => [9, 10, 29, 30, 31, 32],
+            'home-decor' => [11, 12, 33, 34, 35, 36],
+            default => [1],
+        };
+    }
+
     private function specsFor(string $category): array
     {
         $rows = match ($category) {
@@ -307,7 +340,7 @@ class MarketplaceSeeder extends Seeder
             default => [['Material', 'Iroko wood and woven fibre'], ['Dimensions', '50 × 40 × 45 cm']],
         };
 
-        return array_map(fn ($r) => ['label' => $r[0], 'value' => $r[1]], $rows);
+        return array_map(fn($r) => ['label' => $r[0], 'value' => $r[1]], $rows);
     }
 
     private function featuresFor(string $category): string
@@ -348,8 +381,8 @@ class MarketplaceSeeder extends Seeder
         foreach ($combos as $k => $attrs) {
             ProductVariant::create([
                 'product_id' => $product->id,
-                'name' => $attrs['color'].' / '.$attrs['size'],
-                'sku' => $product->sku ? $product->sku.'-'.strtoupper(substr($attrs['color'], 0, 2)).$attrs['size'] : null,
+                'name' => $attrs['color'] . ' / ' . $attrs['size'],
+                'sku' => $product->sku ? $product->sku . '-' . strtoupper(substr($attrs['color'], 0, 2)) . $attrs['size'] : null,
                 'stock' => $k === 0 ? 0 : 1 + (($product->id + $k) % 4),
                 'attributes' => $attrs,
             ]);

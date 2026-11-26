@@ -61,7 +61,7 @@ export function ProductCard({
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-md transition hover:z-10",
         plain
-          ? "bg-transparent"
+          ? "border border-border/80 bg-white"
           : "border border-transparent bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-burgundy/35 hover:shadow-[0_2px_12px_rgba(0,0,0,0.1)]"
       )}
     >
@@ -74,8 +74,8 @@ export function ProductCard({
           className="transition duration-500 group-hover:scale-[1.04]"
           frameClassName="absolute inset-0"
         />
-        {off && !showStockBar && (
-          <span className="absolute top-1.5 right-1.5 z-10 rounded-sm bg-[#fde8e9] px-1.5 py-0.5 text-[11px] font-bold text-crimson">
+        {off && (
+          <span className="absolute top-1.5 right-1.5 z-10 rounded-sm bg-[#f4ecec] px-1.5 py-0.5 text-[11px] font-bold text-burgundy">
             -{off}%
           </span>
         )}
@@ -94,38 +94,38 @@ export function ProductCard({
       <button
         type="button"
         onClick={onSave}
-        className="absolute top-1.5 left-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-foreground/60 shadow-sm transition hover:text-crimson"
+        className="absolute top-1.5 left-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-foreground/60 shadow-sm transition hover:text-burgundy"
         aria-label={saved ? `Remove ${product.name} from saved items` : `Save ${product.name}`}
         aria-pressed={saved}
       >
-        <Heart size={14} className={saved ? "fill-crimson text-crimson" : undefined} />
+        <Heart size={14} className={saved ? "fill-burgundy text-burgundy" : undefined} />
       </button>
 
-      {showStockBar && stock > 0 && (
-        <button
-          type="button"
-          onClick={onQuickAdd}
-          className="absolute top-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-white shadow transition hover:bg-crimson"
-          aria-label={hasOptions ? `Choose options for ${product.name}` : `Add ${product.name} to cart`}
-        >
-          <Plus size={16} />
-        </button>
-      )}
-
       <div className="flex flex-1 flex-col px-2 pt-2 pb-2.5">
-        {showStockBar && (
+        {showStockBar ? (
           <p className="mb-0.5 text-[11px] text-muted">{stock <= 0 ? "Out of stock" : stock <= 8 ? `${stock} items left` : `${stock} items in stock`}</p>
+        ) : (
+          <p className="mb-0.5 text-[11px] text-transparent select-none" aria-hidden>
+            .
+          </p>
         )}
         <Link href={href} prefetch={false} className="line-clamp-2 min-h-[2.5em] text-[12px] leading-snug text-foreground/90 md:text-[13px]">
           {product.name}
         </Link>
 
-        {hasRating && (
-          <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted">
-            <RatingStars value={product.rating} size={11} />
-            <span>({product.reviews_count})</span>
-          </span>
-        )}
+        {/* Reserved rating row so price/+ baselines align across cards */}
+        <span className="mt-1 inline-flex h-[14px] items-center gap-1 text-[11px] text-muted">
+          {hasRating ? (
+            <>
+              <RatingStars value={product.rating} size={11} />
+              <span>({product.reviews_count})</span>
+            </>
+          ) : (
+            <span className="invisible" aria-hidden>
+              —
+            </span>
+          )}
+        </span>
 
         <div className="mt-auto flex items-end justify-between gap-1 pt-1.5">
           <div className="min-w-0">
@@ -133,7 +133,6 @@ export function ProductCard({
             {off ? (
               <p className="flex items-center gap-1.5 truncate text-[11px] text-muted">
                 <span className="truncate line-through">{formatNaira(product.compare_at_price!)}</span>
-                {showStockBar && <span className="shrink-0 rounded-sm bg-crimson px-1 py-px text-[10px] font-bold text-white">-{off}%</span>}
               </p>
             ) : (
               <p className="text-[11px] text-transparent select-none" aria-hidden>
@@ -141,11 +140,11 @@ export function ProductCard({
               </p>
             )}
           </div>
-          {stock > 0 && !showStockBar && (
+          {stock > 0 && (
             <button
               type="button"
               onClick={onQuickAdd}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-white shadow transition hover:bg-crimson"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-white shadow transition hover:bg-burgundy"
               aria-label={hasOptions ? `Choose options for ${product.name}` : `Add ${product.name} to cart`}
             >
               <Plus size={17} />

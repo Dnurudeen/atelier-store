@@ -36,7 +36,7 @@ export function BrandLogo({
         width={480}
         height={170}
         priority={priority}
-        className="h-full w-auto max-w-[140px] object-contain object-left md:max-w-[220px]"
+        className="h-full w-auto max-w-[120px] object-contain object-left sm:max-w-[160px] md:max-w-[200px] lg:max-w-[220px]"
         style={{ width: "auto", height: "100%" }}
       />
     </span>

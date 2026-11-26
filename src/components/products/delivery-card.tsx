@@ -27,7 +27,7 @@ export function DeliveryCard({ store }: { store?: Store | null }) {
   }
 
   return (
-    <section className="rounded-md bg-white">
+    <section className="rounded-md border border-border/80 bg-white">
       <h2 className="border-b border-border px-4 py-3 text-[13px] font-bold tracking-wide uppercase">Delivery &amp; Returns</h2>
       <div className="space-y-3.5 p-4 text-[13px]">
         <label className="block">
@@ -38,6 +38,7 @@ export function DeliveryCard({ store }: { store?: Store | null }) {
             value={state}
             onChange={(e) => choose(e.target.value)}
             className="h-9 w-full rounded-md border border-border bg-white px-2 outline-none focus:border-burgundy"
+            aria-label="Delivery state"
           >
             {NIGERIAN_STATES.map((s) => (
               <option key={s}>{s}</option>
@@ -45,14 +46,19 @@ export function DeliveryCard({ store }: { store?: Store | null }) {
           </select>
         </label>
 
-        <div className="flex gap-2.5">
+        <div className="flex gap-2.5 rounded-md bg-surface px-3 py-2.5">
           <Truck size={20} className="mt-0.5 shrink-0 text-burgundy" />
           <div>
             <p className="font-semibold">Door Delivery</p>
             <p className="text-muted">
               Delivery fee <span className="font-semibold text-foreground">{fee > 0 ? formatNaira(fee) : "Free"}</span>
+              <span className="text-muted"> · from seller rates</span>
             </p>
-            {range && <p className="text-muted">Arrives between <span className="font-semibold text-foreground">{range}</span> when you order today.</p>}
+            {range && (
+              <p className="mt-0.5 text-muted">
+                Arrives between <span className="font-semibold text-foreground">{range}</span> when you order today.
+              </p>
+            )}
           </div>
         </div>
 

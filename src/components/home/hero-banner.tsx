@@ -28,9 +28,10 @@ export function HeroBanner({ banners }: { banners: Banner[] }) {
   const side = banners.filter((b) => b.is_active && b.placement === "side").slice(0, 2);
 
   const [selected, setSelected] = useState(0);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: slides.length > 1 }, [
-    Autoplay({ delay: 5500, stopOnInteraction: false, stopOnMouseEnter: true }),
-  ]);
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: slides.length > 1, duration: 28 },
+    [Autoplay({ delay: 6000, stopOnInteraction: true, stopOnMouseEnter: true })]
+  );
 
   const onSelect = useCallback(() => {
     if (emblaApi) setSelected(emblaApi.selectedScrollSnap());

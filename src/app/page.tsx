@@ -47,7 +47,7 @@ export default async function HomePage() {
         subtitle={flash.length && !feed.flash_ends_at ? "Limited-time prices" : undefined}
         href="/shop?on_sale=1&sort=discount"
         products={flash}
-        tone="crimson"
+        tone="burgundy"
         endsAt={flash.length ? feed.flash_ends_at : null}
         showStockBar
       />

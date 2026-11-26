@@ -3,15 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #111111;
-  --burgundy: #5c0a14;
-  --burgundy-deep: #3d060d;
-  --crimson: #e0313a;
-  --crimson-hover: #c42830;
-  --muted: #6b6b6b;
-  --border: #e8e4e4;
-  --surface: #faf8f8;
-  --surface-warm: #f7f2f0;
-  --page-bg: #f5f3f3;
+  /* Calmer storefront accents — less neon red, more ink + deep wine */
+  --burgundy: #4a0c14;
+  --burgundy-deep: #2f070c;
+  --crimson: #a81f2a;
+  --crimson-hover: #8f1a24;
+  --muted: #5c5c5c;
+  --border: #e6e2e2;
+  --surface: #faf9f9;
+  --surface-warm: #f5f2f1;
+  --page-bg: #f4f3f3;
 }
 
 @theme inline {
@@ -145,9 +146,13 @@ body {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   padding-bottom: 0.25rem;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+}
+
+.product-rail::-webkit-scrollbar {
+  display: none;
 }
 
 .product-rail > * {
