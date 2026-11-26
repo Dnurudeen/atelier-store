@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
+import { WhatsAppFab } from "@/components/layout/whatsapp-fab";
 
 /** Pages with their own full-screen layout (dashboards, auth, checkout). */
 const CHROMELESS_PREFIXES = [
@@ -38,6 +39,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
       <main className={showTabBar ? "pb-mobile-tab min-h-0 flex-1 md:pb-0" : "min-h-0 flex-1"}>{children}</main>
       <Footer />
       {showTabBar && <MobileTabBar />}
+      <WhatsAppFab elevated={!showTabBar} />
     </>
   );
 }

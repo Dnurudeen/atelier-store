@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/brand/logo";
 import { CurrentYear } from "@/components/layout/current-year";
 import { api, errorMessage, fieldErrors } from "@/lib/api";
 import { useCategories } from "@/lib/hooks";
+import { FOOTER_SOCIAL } from "@/lib/social";
 
 const columns = [
   {
@@ -142,14 +143,16 @@ export function Footer() {
             </div>
             <div>
               <p className="mb-2 font-bold tracking-wide text-white uppercase">Join us on</p>
-              <div className="flex gap-2">
-                {[
-                  { label: "Instagram", short: "IG", href: "https://instagram.com" },
-                  { label: "Facebook", short: "f", href: "https://facebook.com" },
-                  { label: "X", short: "X", href: "https://x.com" },
-                  { label: "TikTok", short: "TT", href: "https://tiktok.com" },
-                ].map((s) => (
-                  <a key={s.label} href={s.href} target="_blank" rel="noreferrer" aria-label={s.label} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold hover:bg-crimson">
+              <div className="flex flex-wrap gap-2">
+                {FOOTER_SOCIAL.map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold hover:bg-crimson"
+                  >
                     {s.short}
                   </a>
                 ))}
